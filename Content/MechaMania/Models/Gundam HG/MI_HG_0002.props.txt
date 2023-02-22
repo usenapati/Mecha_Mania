@@ -1,0 +1,96 @@
+ScalarParameterValues[1] =
+{
+    ScalarParameterValues[0] =
+    {
+        ParameterName = RefractionDepthBias
+        ParameterValue = 0
+        ParameterInfo = { Name=None }
+    }
+}
+TextureParameterValues[11] =
+{
+    TextureParameterValues[0] =
+    {
+        ParameterName = (col)BaseTex
+        ParameterValue = Texture2D'/Game/Model/MS/HG_0002/HG_0002_col.HG_0002_col'
+        ParameterInfo = { Name=None }
+    }
+    TextureParameterValues[1] =
+    {
+        ParameterName = (E01)Airbrush/DirtyLegsMap
+        ParameterValue = Texture2D'/Game/Model/MS/HG_0002/HG_0002_E01.HG_0002_E01'
+        ParameterInfo = { Name=None }
+    }
+    TextureParameterValues[2] =
+    {
+        ParameterName = (E02)ChippingTex
+        ParameterValue = Texture2D'/Game/Model/MS/HG_0002/HG_0002_E02.HG_0002_E02'
+        ParameterInfo = { Name=None }
+    }
+    TextureParameterValues[3] =
+    {
+        ParameterName = (mtl)MetalMask
+        ParameterValue = Texture2D'/Game/Model/MS/HG_0002/HG_0002_mtl.HG_0002_mtl'
+        ParameterInfo = { Name=None }
+    }
+    TextureParameterValues[4] =
+    {
+        ParameterName = (P00)PaintImpossibilityTex
+        ParameterValue = Texture2D'/Game/Model/MS/HG_0002/HG_0002_P00.HG_0002_P00'
+        ParameterInfo = { Name=None }
+    }
+    TextureParameterValues[5] =
+    {
+        ParameterName = (P00)ControlMap
+        ParameterValue = Texture2D'/Game/Model/MS/HG_0002/HG_0002_ctl.HG_0002_ctl'
+        ParameterInfo = { Name=None }
+    }
+    TextureParameterValues[6] =
+    {
+        ParameterName = (nor)NormalMap
+        ParameterValue = Texture2D'/Game/Model/MS/HG_0002/HG_0002_nor.HG_0002_nor'
+        ParameterInfo = { Name=None }
+    }
+    TextureParameterValues[7] =
+    {
+        ParameterName = (P10)PaintMap1
+        ParameterValue = Texture2D'/Game/Model/MS/HG_0002/HG_0002_P10.HG_0002_P10'
+        ParameterInfo = { Name=None }
+    }
+    TextureParameterValues[8] =
+    {
+        ParameterName = (P20)PaintMap2
+        ParameterValue = Texture2D'/Game/Model/MS/HG_0002/HG_0002_P20.HG_0002_P20'
+        ParameterInfo = { Name=None }
+    }
+    TextureParameterValues[9] =
+    {
+        ParameterName = (P30)EmissiveMap
+        ParameterValue = Texture2D'/Game/Model/MS/HG_0002/HG_0002_P30.HG_0002_P30'
+        ParameterInfo = { Name=None }
+    }
+    TextureParameterValues[10] =
+    {
+        ParameterName = (rgh)RoughnessMask
+        ParameterValue = Texture2D'/Game/Model/MS/HG_0002/HG_0002_rgh.HG_0002_rgh'
+        ParameterInfo = { Name=None }
+    }
+}
+VectorParameterValues[0] = {}
+Parent = Material3'/Game/Model/Shader/M_Common_MS.M_Common_MS'
+BasePropertyOverrides =
+{
+    bOverride_BlendMode = false
+    BlendMode = BLEND_Opaque (0)
+    bOverride_TwoSided = false
+    TwoSided = false
+    bOverride_OpacityMaskClipValue = false
+    OpacityMaskClipValue = 0
+}
+FlattenedTexture = None
+MobileBaseTexture = None
+MobileNormalTexture = None
+bUseMobileSpecular = false
+MobileSpecularPower = 16
+MobileSpecularMask = MSM_Constant (0)
+MobileMaskTexture = None

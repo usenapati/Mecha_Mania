@@ -2,33 +2,116 @@
 
 
 #include "FPSCharacter.h"
+#include "Camera/CameraComponent.h"
+#include "Components/CapsuleComponent.h"
+#include "Components/InputComponent.h"
+#include "GameFramework/CharacterMovementComponent.h"
+#include "GameFramework/Controller.h"
+//#include "GameFramework/SpringArmComponent.h"
+#include "EnhancedInput/Public/EnhancedInputSubsystems.h"
+#include "EnhancedInput/Public/InputMappingContext.h"
+#include "EnhancedInput/Public/EnhancedInputComponent.h"
+#include "EnhancedInput/Public/InputActionValue.h"
+#include "InputConfigData.h"
 
-// Sets default values
 AFPSCharacter::AFPSCharacter()
 {
- 	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
-	PrimaryActorTick.bCanEverTick = true;
+    // Set size for collision capsule
+    GetCapsuleComponent()->InitCapsuleSize(42.f, 96.0f);
 
+    // set our turn rate for input
+    TurnRateGamepad = 50.f;
+
+    // Don't rotate when the controller rotates. Let that just affect the camera.
+    bUseControllerRotationPitch = false;
+    bUseControllerRotationYaw = false;
+    bUseControllerRotationRoll = false;
+
+    // Configure character movement
+    GetCharacterMovement()->bOrientRotationToMovement = true; // Character moves in the direction of input...    
+    GetCharacterMovement()->RotationRate = FRotator(0.0f, 500.0f, 0.0f); // ...at this rotation rate
+
+    // Note: For faster iteration times these variables, and many more, can be tweaked in the Character Blueprint
+    // instead of recompiling to adjust them
+    GetCharacterMovement()->JumpZVelocity = 700.f;
+    GetCharacterMovement()->AirControl = 0.35f;
+    GetCharacterMovement()->MaxWalkSpeed = 500.f;
+    GetCharacterMovement()->MinAnalogWalkSpeed = 20.f;
+    GetCharacterMovement()->BrakingDecelerationWalking = 2000.f;
+	
+    PrimaryActorTick.bCanEverTick = false;
+
+	Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
+	Camera->bUsePawnControlRotation = true;
+	Camera->SetupAttachment(GetMesh(), FName("head"));
 }
 
-// Called when the game starts or when spawned
 void AFPSCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 	
 }
 
-// Called every frame
-void AFPSCharacter::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
-
-}
-
-// Called to bind functionality to input
 void AFPSCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
-	Super::SetupPlayerInputComponent(PlayerInputComponent);
+    // Get the player controller
+    APlayerController* PC = Cast<APlayerController>(GetController());
 
+    // Get the local player subsystem
+    UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PC->GetLocalPlayer());
+    // Clear out existing mapping, and add our mapping
+    Subsystem->ClearAllMappings();
+    Subsystem->AddMappingContext(InputMapping, 0);
+
+    // Get the EnhancedInputComponent
+    UEnhancedInputComponent* PEI = Cast<UEnhancedInputComponent>(PlayerInputComponent);
+    // Bind the actions
+    PEI->BindAction(InputActions->InputMove, ETriggerEvent::Triggered, this, &AFPSCharacter::Move);
+    PEI->BindAction(InputActions->InputLook, ETriggerEvent::Triggered, this, &AFPSCharacter::Look);
+}
+
+void AFPSCharacter::Move(const FInputActionValue& Value)
+{
+    if (Controller != nullptr)
+    {
+        const FVector2D MoveValue = Value.Get<FVector2D>();
+        const FRotator MovementRotation(0, Controller->GetControlRotation().Yaw, 0);
+
+        // Forward/Backward direction
+        if (MoveValue.Y != 0.f)
+        {
+            // Get forward vector
+            const FVector Direction = MovementRotation.RotateVector(FVector::ForwardVector);
+
+            AddMovementInput(Direction, MoveValue.Y);
+        }
+
+        // Right/Left direction
+        if (MoveValue.X != 0.f)
+        {
+            // Get right vector
+            const FVector Direction = MovementRotation.RotateVector(FVector::RightVector);
+
+            AddMovementInput(Direction, MoveValue.X);
+        }
+    }
+}
+
+void AFPSCharacter::Look(const FInputActionValue& Value)
+{
+    if (Controller != nullptr)
+    {
+        const FVector2D LookValue = Value.Get<FVector2D>();
+
+        if (LookValue.X != 0.f)
+        {
+            AddControllerYawInput(LookValue.X);
+        }
+
+        if (LookValue.Y != 0.f)
+        {
+            AddControllerPitchInput(LookValue.Y);
+        }
+    }
 }
 

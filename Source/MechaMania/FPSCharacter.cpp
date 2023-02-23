@@ -16,30 +16,31 @@
 
 AFPSCharacter::AFPSCharacter()
 {
-    // Set size for collision capsule
-    GetCapsuleComponent()->InitCapsuleSize(42.f, 96.0f);
+	/**
+	// Set size for collision capsule
+	GetCapsuleComponent()->InitCapsuleSize(42.f, 96.0f);
 
-    // set our turn rate for input
-    TurnRateGamepad = 50.f;
+	// set our turn rate for input
+	TurnRateGamepad = 50.f;
 
-    // Don't rotate when the controller rotates. Let that just affect the camera.
-    bUseControllerRotationPitch = false;
-    bUseControllerRotationYaw = false;
-    bUseControllerRotationRoll = false;
+	// Don't rotate when the controller rotates. Let that just affect the camera.
+	bUseControllerRotationPitch = false;
+	bUseControllerRotationYaw = false;
+	bUseControllerRotationRoll = false;
 
-    // Configure character movement
-    GetCharacterMovement()->bOrientRotationToMovement = true; // Character moves in the direction of input...    
-    GetCharacterMovement()->RotationRate = FRotator(0.0f, 500.0f, 0.0f); // ...at this rotation rate
+	// Configure character movement
+	GetCharacterMovement()->bOrientRotationToMovement = true; // Character moves in the direction of input...
+	GetCharacterMovement()->RotationRate = FRotator(0.0f, 500.0f, 0.0f); // ...at this rotation rate
 
-    // Note: For faster iteration times these variables, and many more, can be tweaked in the Character Blueprint
-    // instead of recompiling to adjust them
-    GetCharacterMovement()->JumpZVelocity = 700.f;
-    GetCharacterMovement()->AirControl = 0.35f;
-    GetCharacterMovement()->MaxWalkSpeed = 500.f;
-    GetCharacterMovement()->MinAnalogWalkSpeed = 20.f;
-    GetCharacterMovement()->BrakingDecelerationWalking = 2000.f;
-	
-    PrimaryActorTick.bCanEverTick = false;
+	// Note: For faster iteration times these variables, and many more, can be tweaked in the Character Blueprint
+	// instead of recompiling to adjust them
+	GetCharacterMovement()->JumpZVelocity = 700.f;
+	GetCharacterMovement()->AirControl = 0.35f;
+	GetCharacterMovement()->MaxWalkSpeed = 500.f;
+	GetCharacterMovement()->MinAnalogWalkSpeed = 20.f;
+	GetCharacterMovement()->BrakingDecelerationWalking = 2000.f;
+	**/
+	PrimaryActorTick.bCanEverTick = false;
 
 	Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
 	Camera->bUsePawnControlRotation = true;
@@ -49,69 +50,79 @@ AFPSCharacter::AFPSCharacter()
 void AFPSCharacter::BeginPlay()
 {
 	Super::BeginPlay();
-	
+
+	// Get the player controller
+	if (APlayerController* PC = Cast<APlayerController>(GetController())) {
+
+		// Get the local player subsystem
+		UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PC->GetLocalPlayer());
+		// Clear out existing mapping, and add our mapping
+		Subsystem->ClearAllMappings();
+		Subsystem->AddMappingContext(InputMapping, 0);
+	}
 }
 
 void AFPSCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
-    // Get the player controller
-    APlayerController* PC = Cast<APlayerController>(GetController());
 
-    // Get the local player subsystem
-    UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PC->GetLocalPlayer());
-    // Clear out existing mapping, and add our mapping
-    Subsystem->ClearAllMappings();
-    Subsystem->AddMappingContext(InputMapping, 0);
 
-    // Get the EnhancedInputComponent
-    UEnhancedInputComponent* PEI = Cast<UEnhancedInputComponent>(PlayerInputComponent);
-    // Bind the actions
-    PEI->BindAction(InputActions->InputMove, ETriggerEvent::Triggered, this, &AFPSCharacter::Move);
-    PEI->BindAction(InputActions->InputLook, ETriggerEvent::Triggered, this, &AFPSCharacter::Look);
+	// Get the EnhancedInputComponent
+	if (UEnhancedInputComponent* PEI = CastChecked<UEnhancedInputComponent>(PlayerInputComponent)) {
+		// Bind the actions
+		PEI->BindAction(InputActions->InputMove, ETriggerEvent::Triggered, this, &AFPSCharacter::Move);
+		PEI->BindAction(InputActions->InputLook, ETriggerEvent::Triggered, this, &AFPSCharacter::Look);
+	}
+
 }
 
 void AFPSCharacter::Move(const FInputActionValue& Value)
 {
-    if (Controller != nullptr)
-    {
-        const FVector2D MoveValue = Value.Get<FVector2D>();
-        const FRotator MovementRotation(0, Controller->GetControlRotation().Yaw, 0);
+	if (Controller != nullptr)
+	{
+		const FVector2D MoveValue = Value.Get<FVector2D>();
+		const FRotator MovementRotation(0, Controller->GetControlRotation().Yaw, 0);
 
-        // Forward/Backward direction
-        if (MoveValue.Y != 0.f)
-        {
-            // Get forward vector
-            const FVector Direction = MovementRotation.RotateVector(FVector::ForwardVector);
+		// Forward/Backward direction
+		if (MoveValue.Y != 0.f)
+		{
+			// Get forward vector
+			const FVector Direction = MovementRotation.RotateVector(FVector::ForwardVector);
+			UE_LOG(LogTemp, Warning, TEXT("Input Action Value %s (magnitude %f)"),
+				*Value.ToString(), Value.GetMagnitude());
+			AddMovementInput(Direction, MoveValue.Y);
+		}
 
-            AddMovementInput(Direction, MoveValue.Y);
-        }
-
-        // Right/Left direction
-        if (MoveValue.X != 0.f)
-        {
-            // Get right vector
-            const FVector Direction = MovementRotation.RotateVector(FVector::RightVector);
-
-            AddMovementInput(Direction, MoveValue.X);
-        }
-    }
+		// Right/Left direction
+		if (MoveValue.X != 0.f)
+		{
+			// Get right vector
+			const FVector Direction = MovementRotation.RotateVector(FVector::RightVector);
+			UE_LOG(LogTemp, Warning, TEXT("Input Action Value %s (magnitude %f)"),
+				*Value.ToString(), Value.GetMagnitude());
+			AddMovementInput(Direction, MoveValue.X);
+		}
+	}
 }
 
 void AFPSCharacter::Look(const FInputActionValue& Value)
 {
-    if (Controller != nullptr)
-    {
-        const FVector2D LookValue = Value.Get<FVector2D>();
+	if (Controller != nullptr)
+	{
+		const FVector2D LookValue = Value.Get<FVector2D>();
 
-        if (LookValue.X != 0.f)
-        {
-            AddControllerYawInput(LookValue.X);
-        }
+		if (LookValue.X != 0.f)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Input Action Value %s (magnitude %f)"),
+				*Value.ToString(), Value.GetMagnitude());
+			AddControllerYawInput(LookValue.X);
+		}
 
-        if (LookValue.Y != 0.f)
-        {
-            AddControllerPitchInput(LookValue.Y);
-        }
-    }
+		if (LookValue.Y != 0.f)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Input Action Value %s (magnitude %f)"),
+				*Value.ToString(), Value.GetMagnitude());
+			AddControllerPitchInput(LookValue.Y);
+		}
+	}
 }
 

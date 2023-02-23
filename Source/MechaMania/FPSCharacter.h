@@ -30,7 +30,11 @@ public:
  
 protected:
     virtual void BeginPlay() override;
-    /** Called for forwards/backward input */
+    virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+    
+
+#pragma region /** Locomotion */
+	/** Called for forwards/backward input */
     void MoveForward(float Value);
  
     /** Called for side to side input */
@@ -47,19 +51,36 @@ protected:
      * @param Rate  This is a normalized rate, i.e. 1.0 means 100% of desired turn rate
      */
     void LookUpAtRate(float Rate);
- 
- 
-protected:
-    // APawn interface
-    virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
-    // End of APawn interface
+#pragma endregion
+    
  
 public:
+    virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+
+
     /** Returns CameraBoom subobject **/
     //FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
     /** Returns FollowCamera subobject **/
     FORCEINLINE class UCameraComponent* GetCamera() const { return Camera; }
- 
+
+protected:
+    // Weapon classes spawned by default
+    UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Configurations")
+	TArray<TSubclassOf<class AWeapon>> DefaultWeapons;
+
+public:
+    UPROPERTY(VisibleInstanceOnly, BlueprintReadWrite, Replicated, Category = "State")
+	TArray<class AWeapon*> Weapons;
+
+    UPROPERTY(VisibleInstanceOnly, BlueprintReadWrite, ReplicatedUsing = OnRep_CurrentWeapon, Category = "State")
+	class AWeapon* CurrentWeapon;
+
+    UPROPERTY(VisibleInstanceOnly, BlueprintReadWrite, Category = "State")
+	int32 CurrentIndex = 0;
+
+protected:
+    UFUNCTION()
+	virtual void OnRep_CurrentWeapon(const class AWeapon* OldWeapon);
 #pragma region /** Input */
 protected:
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Enhanced Input")

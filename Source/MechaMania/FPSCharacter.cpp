@@ -13,6 +13,9 @@
 #include "EnhancedInput/Public/EnhancedInputComponent.h"
 #include "EnhancedInput/Public/InputActionValue.h"
 #include "InputConfigData.h"
+#include "Weapon.h"
+#include "Components/SkeletalMeshComponent.h"
+#include "Net/UnrealNetwork.h"
 
 AFPSCharacter::AFPSCharacter()
 {
@@ -51,7 +54,22 @@ void AFPSCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 
-	
+	if (HasAuthority())
+	{
+		for (const TSubclassOf<AWeapon>& WeaponClass : DefaultWeapons)
+		{
+			if (!WeaponClass) continue;
+			FActorSpawnParameters Params;
+			Params.Owner = this;
+			AWeapon* SpawnedWeapon = GetWorld()->SpawnActor<AWeapon>(WeaponClass, Params);
+			const int32 Index = Weapons.Add(SpawnedWeapon);
+			if (Index == CurrentIndex)
+			{
+				CurrentWeapon = SpawnedWeapon;
+				OnRep_CurrentWeapon(nullptr);
+			}
+		}
+	}
 }
 
 void AFPSCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -75,6 +93,35 @@ void AFPSCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompon
 	}
 
 }
+
+void AFPSCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME_CONDITION(AFPSCharacter, Weapons, COND_None);
+	DOREPLIFETIME_CONDITION(AFPSCharacter, CurrentWeapon, COND_None);
+}
+
+void AFPSCharacter::OnRep_CurrentWeapon(const AWeapon* OldWeapon)
+{
+	if (CurrentWeapon)
+	{
+		if (!CurrentWeapon->CurrentOwner)
+		{
+			CurrentWeapon->SetActorTransform(GetMesh()->GetSocketTransform(FName("weapon_r")), false, nullptr, ETeleportType::TeleportPhysics);
+			CurrentWeapon->AttachToComponent(GetMesh(), FAttachmentTransformRules::KeepWorldTransform, FName("weapon_r"));
+
+			CurrentWeapon->Mesh->SetVisibility(true);
+			CurrentWeapon->CurrentOwner = this;
+		}
+	}
+
+	if (OldWeapon)
+	{
+		
+	}
+}
+
 
 void AFPSCharacter::Move(const FInputActionValue& Value)
 {

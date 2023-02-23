@@ -51,23 +51,24 @@ void AFPSCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 
+	
+}
+
+void AFPSCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
+{
 	// Get the player controller
 	if (APlayerController* PC = Cast<APlayerController>(GetController())) {
-
+		UE_LOG(LogTemp, Warning, TEXT("Successfully cast APlayerController"));
 		// Get the local player subsystem
 		UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PC->GetLocalPlayer());
 		// Clear out existing mapping, and add our mapping
 		Subsystem->ClearAllMappings();
 		Subsystem->AddMappingContext(InputMapping, 0);
 	}
-}
-
-void AFPSCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
-{
-
 
 	// Get the EnhancedInputComponent
-	if (UEnhancedInputComponent* PEI = CastChecked<UEnhancedInputComponent>(PlayerInputComponent)) {
+	if (UEnhancedInputComponent* PEI = Cast<UEnhancedInputComponent>(PlayerInputComponent)) {
+		UE_LOG(LogTemp, Warning, TEXT("Successfully cast UEnhancedInputComponent"));
 		// Bind the actions
 		PEI->BindAction(InputActions->InputMove, ETriggerEvent::Triggered, this, &AFPSCharacter::Move);
 		PEI->BindAction(InputActions->InputLook, ETriggerEvent::Triggered, this, &AFPSCharacter::Look);

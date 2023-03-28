@@ -78,9 +78,17 @@ public:
     UPROPERTY(VisibleInstanceOnly, BlueprintReadWrite, Category = "State")
 	int32 CurrentIndex = 0;
 
+    UFUNCTION(BlueprintCallable, Category = "Character")
+    virtual void EquipWeapon(const int32 Index);
+
 protected:
     UFUNCTION()
 	virtual void OnRep_CurrentWeapon(const class AWeapon* OldWeapon);
+
+    UFUNCTION(Server, Reliable)
+	void Server_SetCurrentWeapon(class AWeapon* Weapon);
+    virtual void Server_SetCurrentWeapon_Implementation(class AWeapon* NewWeapon);
+
 #pragma region /** Input */
 protected:
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Enhanced Input")
@@ -88,11 +96,15 @@ protected:
  
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Enhanced Input")
     class UInputConfigData* InputActions;
- 
+
     // Handle move input
     void Move(const FInputActionValue& Value);
     // Handle look input
     void Look(const FInputActionValue& Value);
- 
+
+    // Handle Weapon Swapping
+    void NextWeapon(const FInputActionValue& Value);
+    void LastWeapon(const FInputActionValue& Value);
+
 #pragma endregion
 };

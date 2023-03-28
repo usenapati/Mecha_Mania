@@ -90,6 +90,8 @@ void AFPSCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompon
 		// Bind the actions
 		PEI->BindAction(InputActions->InputMove, ETriggerEvent::Triggered, this, &AFPSCharacter::Move);
 		PEI->BindAction(InputActions->InputLook, ETriggerEvent::Triggered, this, &AFPSCharacter::Look);
+		PEI->BindAction(InputActions->InputNextWeapon, ETriggerEvent::Triggered, this, &AFPSCharacter::NextWeapon); 
+		PEI->BindAction(InputActions->InputLastWeapon, ETriggerEvent::Triggered, this, &AFPSCharacter::LastWeapon); 
 	}
 
 }
@@ -108,17 +110,20 @@ void AFPSCharacter::OnRep_CurrentWeapon(const AWeapon* OldWeapon)
 	{
 		if (!CurrentWeapon->CurrentOwner)
 		{
-			CurrentWeapon->SetActorTransform(GetMesh()->GetSocketTransform(FName("weapon_r")), false, nullptr, ETeleportType::TeleportPhysics);
-			CurrentWeapon->AttachToComponent(GetMesh(), FAttachmentTransformRules::KeepWorldTransform, FName("weapon_r"));
+			const FTransform PlacementTransform = CurrentWeapon->PlacementTransform * GetMesh()->GetSocketTransform(FName("ik_hand_gun"));
+			CurrentWeapon->SetActorTransform(PlacementTransform, false, nullptr, ETeleportType::TeleportPhysics);
+			CurrentWeapon->AttachToComponent(GetMesh(), FAttachmentTransformRules::KeepWorldTransform, FName("ik_hand_gun"));
 
 			CurrentWeapon->Mesh->SetVisibility(true);
 			CurrentWeapon->CurrentOwner = this;
 		}
+
+		CurrentWeapon->Mesh->SetVisibility(true);
 	}
 
 	if (OldWeapon)
 	{
-		
+		OldWeapon->Mesh->SetVisibility(false);
 	}
 }
 
@@ -135,8 +140,8 @@ void AFPSCharacter::Move(const FInputActionValue& Value)
 		{
 			// Get forward vector
 			const FVector Direction = MovementRotation.RotateVector(FVector::ForwardVector);
-			UE_LOG(LogTemp, Warning, TEXT("Input Action Value %s (magnitude %f)"),
-				*Value.ToString(), Value.GetMagnitude());
+			//UE_LOG(LogTemp, Warning, TEXT("Input Action Value %s (magnitude %f)"),
+			//	*Value.ToString(), Value.GetMagnitude());
 			AddMovementInput(Direction, MoveValue.Y);
 		}
 
@@ -145,8 +150,8 @@ void AFPSCharacter::Move(const FInputActionValue& Value)
 		{
 			// Get right vector
 			const FVector Direction = MovementRotation.RotateVector(FVector::RightVector);
-			UE_LOG(LogTemp, Warning, TEXT("Input Action Value %s (magnitude %f)"),
-				*Value.ToString(), Value.GetMagnitude());
+			//UE_LOG(LogTemp, Warning, TEXT("Input Action Value %s (magnitude %f)"),
+			//	*Value.ToString(), Value.GetMagnitude());
 			AddMovementInput(Direction, MoveValue.X);
 		}
 	}
@@ -160,17 +165,61 @@ void AFPSCharacter::Look(const FInputActionValue& Value)
 
 		if (LookValue.X != 0.f)
 		{
-			UE_LOG(LogTemp, Warning, TEXT("Input Action Value %s (magnitude %f)"),
-				*Value.ToString(), Value.GetMagnitude());
+			//UE_LOG(LogTemp, Warning, TEXT("Input Action Value %s (magnitude %f)"),
+			//	*Value.ToString(), Value.GetMagnitude());
 			AddControllerYawInput(LookValue.X);
 		}
 
 		if (LookValue.Y != 0.f)
 		{
-			UE_LOG(LogTemp, Warning, TEXT("Input Action Value %s (magnitude %f)"),
-				*Value.ToString(), Value.GetMagnitude());
+			//UE_LOG(LogTemp, Warning, TEXT("Input Action Value %s (magnitude %f)"),
+			//	*Value.ToString(), Value.GetMagnitude());
 			AddControllerPitchInput(LookValue.Y);
 		}
+	}
+}
+
+void AFPSCharacter::EquipWeapon(const int32 Index)
+{
+	if(!Weapons.IsValidIndex(Index) || CurrentWeapon == Weapons[Index]) return;
+	if (IsLocallyControlled())
+	{
+		CurrentIndex = Index;
+
+		const AWeapon* OldWeapon = CurrentWeapon;
+		CurrentWeapon = Weapons[Index];
+		OnRep_CurrentWeapon(OldWeapon);
+		
+	}
+	else if(!HasAuthority())
+	{
+		Server_SetCurrentWeapon(Weapons[Index]);
+	}
+}
+
+void AFPSCharacter::Server_SetCurrentWeapon_Implementation(AWeapon* NewWeapon)
+{
+	const AWeapon* OldWeapon = CurrentWeapon;
+	CurrentWeapon = NewWeapon;
+	OnRep_CurrentWeapon(OldWeapon);
+}
+
+
+void AFPSCharacter::NextWeapon(const FInputActionValue& Value)
+{
+	if (Controller != nullptr)
+	{
+		const int32 Index = Weapons.IsValidIndex(CurrentIndex + 1) ? CurrentIndex + 1 : 0;
+		EquipWeapon(Index);
+	}
+}
+
+void AFPSCharacter::LastWeapon(const FInputActionValue& Value)
+{
+	if (Controller != nullptr)
+	{
+		const int32 Index = Weapons.IsValidIndex(CurrentIndex - 1) ? CurrentIndex - 1 : Weapons.Num() - 1;
+		EquipWeapon(Index);
 	}
 }
 

@@ -125,6 +125,8 @@ void AFPSCharacter::OnRep_CurrentWeapon(const AWeapon* OldWeapon)
 	{
 		OldWeapon->Mesh->SetVisibility(false);
 	}
+
+	CurrentWeaponChangedDelegate.Broadcast(CurrentWeapon, OldWeapon);
 }
 
 

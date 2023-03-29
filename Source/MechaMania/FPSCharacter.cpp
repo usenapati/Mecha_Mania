@@ -110,9 +110,9 @@ void AFPSCharacter::OnRep_CurrentWeapon(const AWeapon* OldWeapon)
 	{
 		if (!CurrentWeapon->CurrentOwner)
 		{
-			const FTransform PlacementTransform = CurrentWeapon->PlacementTransform * GetMesh()->GetSocketTransform(FName("ik_hand_gun"));
+			const FTransform PlacementTransform = CurrentWeapon->PlacementTransform * GetMesh()->GetSocketTransform(FName("hand_r"));
 			CurrentWeapon->SetActorTransform(PlacementTransform, false, nullptr, ETeleportType::TeleportPhysics);
-			CurrentWeapon->AttachToComponent(GetMesh(), FAttachmentTransformRules::KeepWorldTransform, FName("ik_hand_gun"));
+			CurrentWeapon->AttachToComponent(GetMesh(), FAttachmentTransformRules::KeepWorldTransform, FName("hand_r"));
 
 			CurrentWeapon->Mesh->SetVisibility(true);
 			CurrentWeapon->CurrentOwner = this;

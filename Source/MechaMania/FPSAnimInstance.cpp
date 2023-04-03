@@ -34,7 +34,7 @@ void UFPSAnimInstance::NativeUpdateAnimation(float DeltaTime)
 	CalculateWeaponSway(DeltaTime);
 }
 
-void UFPSAnimInstance::CurrentWeaponChanged(AWeapon* NewWeapon, const AWeapon* OldWeapon)
+void UFPSAnimInstance::CurrentWeaponChanged(AFPSWeapon* NewWeapon, const AFPSWeapon* OldWeapon)
 {
 	CurrentWeapon = NewWeapon;
 	if (CurrentWeapon)

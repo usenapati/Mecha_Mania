@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Weapon.h"
+#include "FPSWeapon.h"
 #include "Animation/AnimInstance.h"
 #include "FPSAnimInstance.generated.h"
 
@@ -21,7 +21,7 @@ protected:
 	virtual void NativeBeginPlay() override;
 	virtual void NativeUpdateAnimation(float DeltaTime) override;
 
-	virtual void CurrentWeaponChanged(class AWeapon* NewWeapon, const class AWeapon* OldWeapon);
+	virtual void CurrentWeaponChanged(class AFPSWeapon* NewWeapon, const class AFPSWeapon* OldWeapon);
 	virtual void SetVars(const float DeltaTime);
 	virtual void CalculateWeaponSway(const float DeltaTime);
 
@@ -36,7 +36,7 @@ public:
 	class USkeletalMeshComponent* Mesh;
 
 	UPROPERTY(BlueprintReadWrite, Category = "Anim")
-	class AWeapon* CurrentWeapon;
+	class AFPSWeapon* CurrentWeapon;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Anim")
 	FIKProperties IKProperties;

@@ -13,7 +13,7 @@
 #include "EnhancedInput/Public/EnhancedInputComponent.h"
 #include "EnhancedInput/Public/InputActionValue.h"
 #include "InputConfigData.h"
-#include "Weapon.h"
+#include "FPSWeapon.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Net/UnrealNetwork.h"
 
@@ -56,12 +56,12 @@ void AFPSCharacter::BeginPlay()
 
 	if (HasAuthority())
 	{
-		for (const TSubclassOf<AWeapon>& WeaponClass : DefaultWeapons)
+		for (const TSubclassOf<AFPSWeapon>& WeaponClass : DefaultWeapons)
 		{
 			if (!WeaponClass) continue;
 			FActorSpawnParameters Params;
 			Params.Owner = this;
-			AWeapon* SpawnedWeapon = GetWorld()->SpawnActor<AWeapon>(WeaponClass, Params);
+			AFPSWeapon* SpawnedWeapon = GetWorld()->SpawnActor<AFPSWeapon>(WeaponClass, Params);
 			const int32 Index = Weapons.Add(SpawnedWeapon);
 			if (Index == CurrentIndex)
 			{
@@ -104,7 +104,7 @@ void AFPSCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLif
 	DOREPLIFETIME_CONDITION(AFPSCharacter, CurrentWeapon, COND_None);
 }
 
-void AFPSCharacter::OnRep_CurrentWeapon(const AWeapon* OldWeapon)
+void AFPSCharacter::OnRep_CurrentWeapon(const AFPSWeapon* OldWeapon)
 {
 	if (CurrentWeapon)
 	{
@@ -188,7 +188,7 @@ void AFPSCharacter::EquipWeapon(const int32 Index)
 	{
 		CurrentIndex = Index;
 
-		const AWeapon* OldWeapon = CurrentWeapon;
+		const AFPSWeapon* OldWeapon = CurrentWeapon;
 		CurrentWeapon = Weapons[Index];
 		OnRep_CurrentWeapon(OldWeapon);
 		
@@ -199,9 +199,9 @@ void AFPSCharacter::EquipWeapon(const int32 Index)
 	}
 }
 
-void AFPSCharacter::Server_SetCurrentWeapon_Implementation(AWeapon* NewWeapon)
+void AFPSCharacter::Server_SetCurrentWeapon_Implementation(AFPSWeapon* NewWeapon)
 {
-	const AWeapon* OldWeapon = CurrentWeapon;
+	const AFPSWeapon* OldWeapon = CurrentWeapon;
 	CurrentWeapon = NewWeapon;
 	OnRep_CurrentWeapon(OldWeapon);
 }

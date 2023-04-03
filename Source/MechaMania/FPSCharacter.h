@@ -7,7 +7,7 @@
 #include "EnhancedInput/Public/InputActionValue.h"
 #include "FPSCharacter.generated.h"
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FCurrentWeaponChangedDelegate, class AWeapon*, CurrentWeapon, const class AWeapon*, OldWeapon);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FCurrentWeaponChangedDelegate, class AFPSWeapon*, CurrentWeapon, const class AFPSWeapon*, OldWeapon);
 
 UCLASS()
 class MECHAMANIA_API AFPSCharacter : public ACharacter
@@ -67,14 +67,14 @@ public:
 protected:
     // Weapon classes spawned by default
     UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Configurations")
-	TArray<TSubclassOf<class AWeapon>> DefaultWeapons;
+	TArray<TSubclassOf<class AFPSWeapon>> DefaultWeapons;
 
 public:
     UPROPERTY(VisibleInstanceOnly, BlueprintReadWrite, Replicated, Category = "State")
-	TArray<class AWeapon*> Weapons;
+	TArray<class AFPSWeapon*> Weapons;
 
     UPROPERTY(VisibleInstanceOnly, BlueprintReadWrite, ReplicatedUsing = OnRep_CurrentWeapon, Category = "State")
-	class AWeapon* CurrentWeapon;
+	class AFPSWeapon* CurrentWeapon;
 
     // Called whenever Current Weapon is changed
     UPROPERTY(BlueprintAssignable, Category = "Delegates")
@@ -88,11 +88,11 @@ public:
 
 protected:
     UFUNCTION()
-	virtual void OnRep_CurrentWeapon(const class AWeapon* OldWeapon);
+	virtual void OnRep_CurrentWeapon(const class AFPSWeapon* OldWeapon);
 
     UFUNCTION(Server, Reliable)
-	void Server_SetCurrentWeapon(class AWeapon* Weapon);
-    virtual void Server_SetCurrentWeapon_Implementation(class AWeapon* NewWeapon);
+	void Server_SetCurrentWeapon(class AFPSWeapon* Weapon);
+    virtual void Server_SetCurrentWeapon_Implementation(class AFPSWeapon* NewWeapon);
 
 #pragma region /** Input */
 protected:

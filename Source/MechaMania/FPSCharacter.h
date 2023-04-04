@@ -5,7 +5,9 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "EnhancedInput/Public/InputActionValue.h"
+#include "Interfaces/OnlineSessionInterface.h"
 #include "FPSCharacter.generated.h"
+
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FCurrentWeaponChangedDelegate, class AFPSWeapon*, CurrentWeapon, const class AFPSWeapon*, OldWeapon);
 
@@ -93,6 +95,21 @@ protected:
     UFUNCTION(Server, Reliable)
 	void Server_SetCurrentWeapon(class AFPSWeapon* Weapon);
     virtual void Server_SetCurrentWeapon_Implementation(class AFPSWeapon* NewWeapon);
+
+#pragma region /** Online Subsystem */
+public:
+    // Pointer to Online Session Interface
+    IOnlineSessionPtr OnlineSessionInterface;
+
+protected:
+    UFUNCTION(BlueprintCallable)
+	void CreateGameSession();
+
+    void OnCreateSessionComplete(FName SessionName, bool bWasSuccessful);
+
+private:
+    FOnCreateSessionCompleteDelegate CreateSessionCompleteDelegate;
+#pragma endregion
 
 #pragma region /** Input */
 protected:

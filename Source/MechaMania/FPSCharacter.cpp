@@ -16,8 +16,12 @@
 #include "FPSWeapon.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Net/UnrealNetwork.h"
+#include "OnlineSubsystem.h"
+#include "OnlineSessionSettings.h"
+#include "Interfaces/OnlineSessionInterface.h"
 
-AFPSCharacter::AFPSCharacter()
+AFPSCharacter::AFPSCharacter():
+	CreateSessionCompleteDelegate(FOnCreateSessionCompleteDelegate::CreateUObject(this, &ThisClass::OnCreateSessionComplete))
 {
 	/**
 	// Set size for collision capsule
@@ -48,6 +52,25 @@ AFPSCharacter::AFPSCharacter()
 	Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
 	Camera->bUsePawnControlRotation = true;
 	Camera->SetupAttachment(GetMesh(), FName("head"));
+
+	// Online Subsystem
+	IOnlineSubsystem* OnlineSubsystem = IOnlineSubsystem::Get();
+	if (OnlineSubsystem)
+	{
+		OnlineSessionInterface = OnlineSubsystem->GetSessionInterface();
+
+		if (GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage(
+				-1,
+				15.f,
+				FColor::Blue,
+				FString::Printf(TEXT("Found subsystem %s"), *OnlineSubsystem->GetSubsystemName().ToString())
+			);
+		}
+	}
+
+
 }
 
 void AFPSCharacter::BeginPlay()
@@ -206,7 +229,6 @@ void AFPSCharacter::Server_SetCurrentWeapon_Implementation(AFPSWeapon* NewWeapon
 	OnRep_CurrentWeapon(OldWeapon);
 }
 
-
 void AFPSCharacter::NextWeapon(const FInputActionValue& Value)
 {
 	if (Controller != nullptr)
@@ -225,3 +247,54 @@ void AFPSCharacter::LastWeapon(const FInputActionValue& Value)
 	}
 }
 
+void AFPSCharacter::CreateGameSession()
+{
+	if (!OnlineSessionInterface.IsValid()) return;
+	auto ExistingSession = OnlineSessionInterface->GetNamedSession(NAME_GameSession);
+	if (ExistingSession != nullptr)
+	{
+		OnlineSessionInterface->DestroySession(NAME_GameSession);
+	}
+
+	OnlineSessionInterface->AddOnCreateSessionCompleteDelegate_Handle(CreateSessionCompleteDelegate);
+
+	TSharedPtr<FOnlineSessionSettings> SessionSettings = MakeShareable(new FOnlineSessionSettings());
+	SessionSettings->bIsLANMatch = false;
+	SessionSettings->NumPublicConnections = 4;
+	SessionSettings->bAllowJoinInProgress = true;
+	SessionSettings->bAllowJoinViaPresence = true;
+	SessionSettings->bShouldAdvertise = true;
+	SessionSettings->bUsesPresence = true;
+	SessionSettings->bUseLobbiesIfAvailable = true;
+
+	const ULocalPlayer* LocalPlayer = GetWorld()->GetFirstLocalPlayerFromController();
+	OnlineSessionInterface->CreateSession(*LocalPlayer->GetPreferredUniqueNetId(), NAME_GameSession, *SessionSettings);
+}
+
+void AFPSCharacter::OnCreateSessionComplete(FName SessionName, bool bWasSuccessful)
+{
+	if (bWasSuccessful)
+	{
+		if (GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage(
+				-1,
+				15.f,
+				FColor::Green,
+				FString::Printf(TEXT("Created session: %s"), *SessionName.ToString())
+			);
+		}
+	}
+	else
+	{
+		if (GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage(
+				-1,
+				15.f,
+				FColor::Red,
+				FString::Printf(TEXT("Failed to create session"))
+			);
+		}
+	}
+}

@@ -13,11 +13,15 @@
 #include "EnhancedInput/Public/EnhancedInputComponent.h"
 #include "EnhancedInput/Public/InputActionValue.h"
 #include "InputConfigData.h"
-#include "Weapon.h"
+#include "FPSWeapon.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Net/UnrealNetwork.h"
+#include "OnlineSubsystem.h"
+#include "OnlineSessionSettings.h"
+#include "Interfaces/OnlineSessionInterface.h"
 
-AFPSCharacter::AFPSCharacter()
+AFPSCharacter::AFPSCharacter():
+	CreateSessionCompleteDelegate(FOnCreateSessionCompleteDelegate::CreateUObject(this, &ThisClass::OnCreateSessionComplete))
 {
 	/**
 	// Set size for collision capsule
@@ -48,6 +52,25 @@ AFPSCharacter::AFPSCharacter()
 	Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
 	Camera->bUsePawnControlRotation = true;
 	Camera->SetupAttachment(GetMesh(), FName("head"));
+
+	// Online Subsystem
+	IOnlineSubsystem* OnlineSubsystem = IOnlineSubsystem::Get();
+	if (OnlineSubsystem)
+	{
+		OnlineSessionInterface = OnlineSubsystem->GetSessionInterface();
+
+		if (GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage(
+				-1,
+				15.f,
+				FColor::Blue,
+				FString::Printf(TEXT("Found subsystem %s"), *OnlineSubsystem->GetSubsystemName().ToString())
+			);
+		}
+	}
+
+
 }
 
 void AFPSCharacter::BeginPlay()
@@ -56,12 +79,12 @@ void AFPSCharacter::BeginPlay()
 
 	if (HasAuthority())
 	{
-		for (const TSubclassOf<AWeapon>& WeaponClass : DefaultWeapons)
+		for (const TSubclassOf<AFPSWeapon>& WeaponClass : DefaultWeapons)
 		{
 			if (!WeaponClass) continue;
 			FActorSpawnParameters Params;
 			Params.Owner = this;
-			AWeapon* SpawnedWeapon = GetWorld()->SpawnActor<AWeapon>(WeaponClass, Params);
+			AFPSWeapon* SpawnedWeapon = GetWorld()->SpawnActor<AFPSWeapon>(WeaponClass, Params);
 			const int32 Index = Weapons.Add(SpawnedWeapon);
 			if (Index == CurrentIndex)
 			{
@@ -104,15 +127,15 @@ void AFPSCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLif
 	DOREPLIFETIME_CONDITION(AFPSCharacter, CurrentWeapon, COND_None);
 }
 
-void AFPSCharacter::OnRep_CurrentWeapon(const AWeapon* OldWeapon)
+void AFPSCharacter::OnRep_CurrentWeapon(const AFPSWeapon* OldWeapon)
 {
 	if (CurrentWeapon)
 	{
 		if (!CurrentWeapon->CurrentOwner)
 		{
-			const FTransform PlacementTransform = CurrentWeapon->PlacementTransform * GetMesh()->GetSocketTransform(FName("ik_hand_gun"));
+			const FTransform PlacementTransform = CurrentWeapon->PlacementTransform * GetMesh()->GetSocketTransform(FName("hand_r"));
 			CurrentWeapon->SetActorTransform(PlacementTransform, false, nullptr, ETeleportType::TeleportPhysics);
-			CurrentWeapon->AttachToComponent(GetMesh(), FAttachmentTransformRules::KeepWorldTransform, FName("ik_hand_gun"));
+			CurrentWeapon->AttachToComponent(GetMesh(), FAttachmentTransformRules::KeepWorldTransform, FName("hand_r"));
 
 			CurrentWeapon->Mesh->SetVisibility(true);
 			CurrentWeapon->CurrentOwner = this;
@@ -188,7 +211,7 @@ void AFPSCharacter::EquipWeapon(const int32 Index)
 	{
 		CurrentIndex = Index;
 
-		const AWeapon* OldWeapon = CurrentWeapon;
+		const AFPSWeapon* OldWeapon = CurrentWeapon;
 		CurrentWeapon = Weapons[Index];
 		OnRep_CurrentWeapon(OldWeapon);
 		
@@ -199,13 +222,12 @@ void AFPSCharacter::EquipWeapon(const int32 Index)
 	}
 }
 
-void AFPSCharacter::Server_SetCurrentWeapon_Implementation(AWeapon* NewWeapon)
+void AFPSCharacter::Server_SetCurrentWeapon_Implementation(AFPSWeapon* NewWeapon)
 {
-	const AWeapon* OldWeapon = CurrentWeapon;
+	const AFPSWeapon* OldWeapon = CurrentWeapon;
 	CurrentWeapon = NewWeapon;
 	OnRep_CurrentWeapon(OldWeapon);
 }
-
 
 void AFPSCharacter::NextWeapon(const FInputActionValue& Value)
 {
@@ -225,3 +247,54 @@ void AFPSCharacter::LastWeapon(const FInputActionValue& Value)
 	}
 }
 
+void AFPSCharacter::CreateGameSession()
+{
+	if (!OnlineSessionInterface.IsValid()) return;
+	auto ExistingSession = OnlineSessionInterface->GetNamedSession(NAME_GameSession);
+	if (ExistingSession != nullptr)
+	{
+		OnlineSessionInterface->DestroySession(NAME_GameSession);
+	}
+
+	OnlineSessionInterface->AddOnCreateSessionCompleteDelegate_Handle(CreateSessionCompleteDelegate);
+
+	TSharedPtr<FOnlineSessionSettings> SessionSettings = MakeShareable(new FOnlineSessionSettings());
+	SessionSettings->bIsLANMatch = false;
+	SessionSettings->NumPublicConnections = 4;
+	SessionSettings->bAllowJoinInProgress = true;
+	SessionSettings->bAllowJoinViaPresence = true;
+	SessionSettings->bShouldAdvertise = true;
+	SessionSettings->bUsesPresence = true;
+	SessionSettings->bUseLobbiesIfAvailable = true;
+
+	const ULocalPlayer* LocalPlayer = GetWorld()->GetFirstLocalPlayerFromController();
+	OnlineSessionInterface->CreateSession(*LocalPlayer->GetPreferredUniqueNetId(), NAME_GameSession, *SessionSettings);
+}
+
+void AFPSCharacter::OnCreateSessionComplete(FName SessionName, bool bWasSuccessful)
+{
+	if (bWasSuccessful)
+	{
+		if (GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage(
+				-1,
+				15.f,
+				FColor::Green,
+				FString::Printf(TEXT("Created session: %s"), *SessionName.ToString())
+			);
+		}
+	}
+	else
+	{
+		if (GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage(
+				-1,
+				15.f,
+				FColor::Red,
+				FString::Printf(TEXT("Failed to create session"))
+			);
+		}
+	}
+}

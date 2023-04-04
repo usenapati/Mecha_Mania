@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-#include "Weapon.generated.h"
+#include "FPSWeapon.generated.h"
 
 USTRUCT(BlueprintType)
 struct FIKProperties
@@ -22,13 +22,13 @@ struct FIKProperties
 };
 
 UCLASS(Abstract)
-class MECHAMANIA_API AWeapon : public AActor
+class MECHAMANIA_API AFPSWeapon : public AActor
 {
 	GENERATED_BODY()
 	
 public:	
 	// Sets default values for this actor's properties
-	AWeapon();
+	AFPSWeapon();
 
 protected:
 	// Called when the game starts or when spawned

@@ -249,6 +249,9 @@ void AFPSCharacter::LastWeapon(const FInputActionValue& Value)
 	}
 }
 
+//
+// Online Sessions
+//
 void AFPSCharacter::CreateGameSession()
 {
 	if (!OnlineSessionInterface.IsValid()) return;
@@ -307,7 +310,7 @@ void AFPSCharacter::OnCreateSessionComplete(FName SessionName, bool bWasSuccessf
 			UWorld* World = GetWorld();
 			if (World)
 			{
-				World->ServerTravel(FString("Game/MechaMania/Maps/Lobby?listen"));
+				World->ServerTravel(FString("/Game/MechaMania/Maps/Lobby?listen"));
 			}
 		}
 	}

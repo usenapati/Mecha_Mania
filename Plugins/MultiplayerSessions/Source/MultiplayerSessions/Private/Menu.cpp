@@ -17,7 +17,7 @@ void UMenu::MenuSetup(int32 NumberOfPublicConnections, FString TypeOfMatch)
 	if (World)
 	{
 		APlayerController* PlayerController = World->GetFirstPlayerController();
-		if (PlayerController) 
+		if (PlayerController)
 		{
 			FInputModeUIOnly InputModeData;
 			InputModeData.SetWidgetToFocus(TakeWidget());
@@ -31,6 +31,11 @@ void UMenu::MenuSetup(int32 NumberOfPublicConnections, FString TypeOfMatch)
 	if (GameInstance)
 	{
 		MultiplayerSessionsSubsystem = GameInstance->GetSubsystem<UMultiplayerSessionsSubsystem>();
+	}
+
+	if (MultiplayerSessionsSubsystem)
+	{
+		MultiplayerSessionsSubsystem->MultiplayerOnCreateSessionComplete.AddDynamic(this, &ThisClass::OnCreateSession);
 	}
 }
 
@@ -55,18 +60,24 @@ void UMenu::NativeDestruct()
 	Super::NativeDestruct();
 }
 
+void UMenu::OnCreateSession(bool bWasSuccessful)
+{
+	if (bWasSuccessful)
+	{
+		if (GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage(
+				-1,
+				15.f,
+				FColor::Yellow,
+				FString::Printf(TEXT("Session created successfully"))
+			);
+		}
+	}
+}
+
 void UMenu::HostButtonClicked()
 {
-	if (GEngine)
-	{
-		GEngine->AddOnScreenDebugMessage(
-			-1,
-			15.f,
-			FColor::Yellow,
-			FString::Printf(TEXT("Host Button Clicked"))
-		);
-	}
-
 	if (MultiplayerSessionsSubsystem)
 	{
 		MultiplayerSessionsSubsystem->CreateSession(NumPublicConnections, MatchType);
@@ -89,7 +100,7 @@ void UMenu::JoinButtonClicked()
 			FString::Printf(TEXT("Join Button Clicked"))
 		);
 	}
-	
+
 }
 
 void UMenu::MenuTearDown()

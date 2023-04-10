@@ -23,6 +23,9 @@ protected:
 
 	virtual void NativeDestruct() override;
 
+	// Callbacks for MultiplayerSessionsSubsystem
+	void OnCreateSession(bool bWasSuccessful);
+
 private:
 	UPROPERTY(meta = (BindWidget))
 	class UButton* HostButton;

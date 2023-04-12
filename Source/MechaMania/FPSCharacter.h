@@ -66,6 +66,7 @@ public:
     /** Returns FollowCamera subobject **/
     FORCEINLINE class UCameraComponent* GetCamera() const { return Camera; }
 
+#pragma region /** Networked Weapons System */
 protected:
     // Weapon classes spawned by default
     UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Configurations")
@@ -95,7 +96,7 @@ protected:
     UFUNCTION(Server, Reliable)
 	void Server_SetCurrentWeapon(class AFPSWeapon* Weapon);
     virtual void Server_SetCurrentWeapon_Implementation(class AFPSWeapon* NewWeapon);
-
+#pragma endregion
 #pragma region /** Online Subsystem */
 public:
     // Pointer to Online Session Interface
@@ -120,18 +121,25 @@ private:
 #pragma endregion
 
 #pragma region /** Input */
+public:
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Animation")
+    bool IsADS;
+
 protected:
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Enhanced Input")
     class UInputMappingContext* InputMapping;
  
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Enhanced Input")
     class UInputConfigData* InputActions;
+    // Movement Inputs
+    void Move(const FInputActionValue& Value);  // Handle move input
+    void Look(const FInputActionValue& Value);  // Handle look input
+    void Jump(const FInputActionValue& Value);
+    void Crouch(const FInputActionValue& Value);
 
-    // Handle move input
-    void Move(const FInputActionValue& Value);
-    // Handle look input
-    void Look(const FInputActionValue& Value);
-
+    // Weapon Inputs
+    void ADS(const FInputActionValue& Value);
+    void Shoot(const FInputActionValue& Value);
     // Handle Weapon Swapping
     void NextWeapon(const FInputActionValue& Value);
     void LastWeapon(const FInputActionValue& Value);

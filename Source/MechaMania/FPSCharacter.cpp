@@ -117,6 +117,7 @@ void AFPSCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompon
 		PEI->BindAction(InputActions->InputLook, ETriggerEvent::Triggered, this, &AFPSCharacter::Look);
 		PEI->BindAction(InputActions->InputNextWeapon, ETriggerEvent::Triggered, this, &AFPSCharacter::NextWeapon); 
 		PEI->BindAction(InputActions->InputLastWeapon, ETriggerEvent::Triggered, this, &AFPSCharacter::LastWeapon); 
+		PEI->BindAction(InputActions->InputADS, ETriggerEvent::Triggered, this, &AFPSCharacter::ADS);
 	}
 
 }
@@ -204,6 +205,34 @@ void AFPSCharacter::Look(const FInputActionValue& Value)
 			AddControllerPitchInput(LookValue.Y);
 		}
 	}
+}
+
+void AFPSCharacter::Jump(const FInputActionValue& Value)
+{
+}
+
+void AFPSCharacter::Crouch(const FInputActionValue& Value)
+{
+}
+
+void AFPSCharacter::ADS(const FInputActionValue& Value)
+{
+	if (Controller != nullptr)
+	{
+		const bool ADSValue = Value.Get<bool>();
+		if (ADSValue)
+		{
+			IsADS = true;
+		}
+		else
+		{
+			IsADS = false;
+		}
+	}
+}
+
+void AFPSCharacter::Shoot(const FInputActionValue& Value)
+{
 }
 
 void AFPSCharacter::EquipWeapon(const int32 Index)

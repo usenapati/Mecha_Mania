@@ -2,8 +2,8 @@
 .vs/
 .vscode/
 
-./idea
-./Plugins/Developer/RiderLink
+.idea/
+Plugins/Developer/RiderLink/
 
 # Compiled Object files
 *.slo

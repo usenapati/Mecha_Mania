@@ -9,6 +9,10 @@
 
 // Declaring custom delegates for Menu class to bind callbacks
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FMultiplayerOnCreateSessionComplete, bool, bWasSuccessful);
+DECLARE_MULTICAST_DELEGATE_TwoParams(FMultiplayerOnFindSessionsComplete, const TArray<FOnlineSessionSearchResult>& SessionResult, bool bWasSuccessful);
+DECLARE_MULTICAST_DELEGATE_OneParam(FMultiplayerOnJoinSessionComplete, EOnJoinSessionCompleteResult::Type Result);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FMultiplayerOnDestroySessionComplete, bool, bWasSuccessful);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FMultiplayerOnStartSessionComplete, bool, bWasSuccessful);
 
 /**
  * 
@@ -24,17 +28,21 @@ public:
 	*	To handle session functionality i.e. Menu Class
 	*/
 	void CreateSession(int32 NumPublicConnections, FString MatchType);
-	void FindSession(int32 MaxSearchResults);
+	void FindSessions(int32 MaxSearchResults);
 	void JoinSession(const FOnlineSessionSearchResult& SessionResult);
 	void DestroySession();
 	void StartSession();
 
 	// Custom Delegates for Menu Class
 	FMultiplayerOnCreateSessionComplete MultiplayerOnCreateSessionComplete;
+	FMultiplayerOnFindSessionsComplete MultiplayerOnFindSessionsComplete;
+	FMultiplayerOnJoinSessionComplete MultiplayerOnJoinSessionComplete;
+	FMultiplayerOnDestroySessionComplete MultiplayerOnDestroySessionComplete;
+	FMultiplayerOnStartSessionComplete MultiplayerOnStartSessionComplete;
 
 protected:
 	/**
-	*	Internal callbcks for delegates. Added to Online Session Interface delegate list
+	*	Internal callbacks for delegates. Added to Online Session Interface delegate list
 	*/
 	void OnCreateSessionComplete(FName SessionName, bool bWasSuccessful);
 	void OnFindSessionsComplete(bool bWasSuccessful);
@@ -45,10 +53,11 @@ protected:
 private:
 	IOnlineSessionPtr SessionInterface;
 	TSharedPtr<FOnlineSessionSettings> LastSessionSettings;
+	TSharedPtr<FOnlineSessionSearch> LastSessionSearch;
 
 	/**
 	*	To add to Online Session Interface delegate list. 
-	*	Binded to MultiplayerSessionSubsystem internal callbacks
+	*	Bind to MultiplayerSessionSubsystem internal callbacks
 	*/
 	FOnCreateSessionCompleteDelegate CreateSessionCompleteDelegate;
 	FDelegateHandle CreateSessionCompleteDelegateHandle;

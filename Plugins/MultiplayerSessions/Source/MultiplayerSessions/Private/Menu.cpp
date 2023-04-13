@@ -73,6 +73,23 @@ void UMenu::OnCreateSession(bool bWasSuccessful)
 				FString::Printf(TEXT("Session created successfully"))
 			);
 		}
+		UWorld* World = GetWorld();
+		if (World)
+		{
+			World->ServerTravel(FString("/Game/MechaMania/Maps/Lobby?listen"));
+		}
+	} 
+	else
+	{
+		if (GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage(
+				-1,
+				15.f,
+				FColor::Red,
+				FString::Printf(TEXT("Failed to create session"))
+			);
+		}
 	}
 }
 
@@ -81,11 +98,7 @@ void UMenu::HostButtonClicked()
 	if (MultiplayerSessionsSubsystem)
 	{
 		MultiplayerSessionsSubsystem->CreateSession(NumPublicConnections, MatchType);
-		UWorld* World = GetWorld();
-		if (World)
-		{
-			World->ServerTravel(FString("/Game/MechaMania/Maps/Lobby?listen"));
-		}
+		
 	}
 }
 

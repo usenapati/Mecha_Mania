@@ -24,6 +24,7 @@ protected:
 	virtual void NativeDestruct() override;
 
 	// Callbacks for MultiplayerSessionsSubsystem
+	UFUNCTION()
 	void OnCreateSession(bool bWasSuccessful);
 
 private:

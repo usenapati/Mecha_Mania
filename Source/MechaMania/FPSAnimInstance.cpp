@@ -8,7 +8,6 @@
 
 UFPSAnimInstance::UFPSAnimInstance()
 {
-	
 }
 
 void UFPSAnimInstance::NativeBeginPlay()
@@ -43,21 +42,20 @@ void UFPSAnimInstance::CurrentWeaponChanged(AFPSWeapon* NewWeapon, const AFPSWea
 	}
 	else
 	{
-		
 	}
 }
 
 void UFPSAnimInstance::SetVars(const float DeltaTime)
 {
-	CameraTransform = FTransform(Character->GetBaseAimRotation(), Character->GetCamera()->GetComponentLocation());
+	/*
+	CameraTransform = FTransform(Character->GetBaseAimRotation(), Character->GetCamera()->GetComponentLocation()); //
 
-	const FTransform& RootOffset = Mesh->GetSocketTransform(FName("root"), RTS_Component).Inverse() * Mesh->GetSocketTransform(FName("ik_hand_root"));
+	const FTransform& RootOffset = Mesh->GetSocketTransform(FName("root"), RTS_Component).Inverse() * Mesh->
+		GetSocketTransform(FName("ik_hand_root"));
 	RelativeCameraTransform = CameraTransform.GetRelativeTransform(RootOffset);
-
+	*/
 }
 
 void UFPSAnimInstance::CalculateWeaponSway(const float DeltaTime)
 {
-	
 }
-

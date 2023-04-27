@@ -7,7 +7,7 @@
 #include "Components/InputComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/Controller.h"
-//#include "GameFramework/SpringArmComponent.h"
+#include "GameFramework/SpringArmComponent.h"
 #include "EnhancedInput/Public/EnhancedInputSubsystems.h"
 #include "EnhancedInput/Public/InputMappingContext.h"
 #include "EnhancedInput/Public/EnhancedInputComponent.h"
@@ -19,11 +19,14 @@
 #include "OnlineSubsystem.h"
 #include "OnlineSessionSettings.h"
 #include "Interfaces/OnlineSessionInterface.h"
+#include "Kismet/GameplayStatics.h"
 
-AFPSCharacter::AFPSCharacter() :
-	CreateSessionCompleteDelegate(FOnCreateSessionCompleteDelegate::CreateUObject(this, &ThisClass::OnCreateSessionComplete)),
-	FindSessionsCompleteDelegate(FOnFindSessionsCompleteDelegate::CreateUObject(this, &ThisClass::OnFindSessionsComplete)),
-	JoinSessionCompleteDelegate(FOnJoinSessionCompleteDelegate::CreateUObject(this, &ThisClass::OnJoinSessionComplete))
+AFPSCharacter::AFPSCharacter() //:
+	//CreateSessionCompleteDelegate(
+	//	FOnCreateSessionCompleteDelegate::CreateUObject(this, &ThisClass::OnCreateSessionComplete)),
+	//FindSessionsCompleteDelegate(
+	//	FOnFindSessionsCompleteDelegate::CreateUObject(this, &ThisClass::OnFindSessionsComplete)),
+	//JoinSessionCompleteDelegate(FOnJoinSessionCompleteDelegate::CreateUObject(this, &ThisClass::OnJoinSessionComplete))
 {
 	/**
 	// Set size for collision capsule
@@ -50,30 +53,61 @@ AFPSCharacter::AFPSCharacter() :
 	GetCharacterMovement()->BrakingDecelerationWalking = 2000.f;
 	**/
 	PrimaryActorTick.bCanEverTick = false;
+	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
+	CameraBoom->SetupAttachment(GetMesh());
+	//Setting default properties of the SpringArmComp
+	CameraBoom->bUsePawnControlRotation = true;
+	CameraBoom->bEnableCameraLag = true;
+	CameraBoom->TargetArmLength = 300.0f;
+	
+	FirstPersonCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FirstPersonCamera"));
+	FirstPersonCamera->bUsePawnControlRotation = true;
+	FirstPersonCamera->SetupAttachment(GetMesh(), FName("head"));
 
-	Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
-	Camera->bUsePawnControlRotation = true;
-	Camera->SetupAttachment(GetMesh(), FName("head"));
+	ThirdPersonCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("ThirdPersonCamera"));
+	ThirdPersonCamera->bUsePawnControlRotation = false;
+	ThirdPersonCamera->AttachToComponent(CameraBoom, FAttachmentTransformRules::KeepRelativeTransform,
+	                                     USpringArmComponent::SocketName);
 
+	PlayerController = UGameplayStatics::GetPlayerController(this, 0);
+	/*
+	if (!IsFirstPerson)
+	{
+		// Adjust Camera to Third Person View
+		ThirdPersonCamera->SetActive(true);
+		FirstPersonCamera->SetActive(false);
+		//PlayerController->SetViewTargetWithBlend(this, 1.f);
+		CurrentCamera = ThirdPersonCamera;
+	}
+	else
+	{
+			*/
+		// Adjust Camera to First Person View
+		ThirdPersonCamera->SetActive(false);
+		FirstPersonCamera->SetActive(true);
+		//PlayerController->SetViewTargetWithBlend(this, 1.f);
+		CurrentCamera = FirstPersonCamera;
+	
+	
+	
 	// Online Subsystem
+	/*
 	IOnlineSubsystem* OnlineSubsystem = IOnlineSubsystem::Get();
 	if (OnlineSubsystem)
 	{
 		OnlineSessionInterface = OnlineSubsystem->GetSessionInterface();
-/*
-		if (GEngine)
-		{
-			GEngine->AddOnScreenDebugMessage(
-				-1,
-				15.f,
-				FColor::Blue,
-				FString::Printf(TEXT("Found subsystem %s"), *OnlineSubsystem->GetSubsystemName().ToString())
-			);
-		}
-*/
+				if (GEngine)
+				{
+					GEngine->AddOnScreenDebugMessage(
+						-1,
+						15.f,
+						FColor::Blue,
+						FString::Printf(TEXT("Found subsystem %s"), *OnlineSubsystem->GetSubsystemName().ToString())
+					);
+				}
+
 	}
-
-
+*/
 }
 
 void AFPSCharacter::BeginPlay()
@@ -101,26 +135,32 @@ void AFPSCharacter::BeginPlay()
 void AFPSCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	// Get the player controller
-	if (APlayerController* PC = Cast<APlayerController>(GetController())) {
+	if (APlayerController* PC = Cast<APlayerController>(GetController()))
+	{
 		UE_LOG(LogTemp, Warning, TEXT("Successfully cast APlayerController"));
 		// Get the local player subsystem
-		UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PC->GetLocalPlayer());
+		UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(
+			PC->GetLocalPlayer());
 		// Clear out existing mapping, and add our mapping
 		Subsystem->ClearAllMappings();
 		Subsystem->AddMappingContext(InputMapping, 0);
 	}
 
 	// Get the EnhancedInputComponent
-	if (UEnhancedInputComponent* PEI = Cast<UEnhancedInputComponent>(PlayerInputComponent)) {
+	if (UEnhancedInputComponent* PEI = Cast<UEnhancedInputComponent>(PlayerInputComponent))
+	{
 		UE_LOG(LogTemp, Warning, TEXT("Successfully cast UEnhancedInputComponent"));
 		// Bind the actions
 		PEI->BindAction(InputActions->InputMove, ETriggerEvent::Triggered, this, &AFPSCharacter::Move);
 		PEI->BindAction(InputActions->InputLook, ETriggerEvent::Triggered, this, &AFPSCharacter::Look);
-		PEI->BindAction(InputActions->InputNextWeapon, ETriggerEvent::Triggered, this, &AFPSCharacter::NextWeapon); 
-		PEI->BindAction(InputActions->InputLastWeapon, ETriggerEvent::Triggered, this, &AFPSCharacter::LastWeapon); 
+		PEI->BindAction(InputActions->InputNextWeapon, ETriggerEvent::Triggered, this, &AFPSCharacter::NextWeapon);
+		PEI->BindAction(InputActions->InputLastWeapon, ETriggerEvent::Triggered, this, &AFPSCharacter::LastWeapon);
+		PEI->BindAction(InputActions->InputShoot, ETriggerEvent::Triggered, this, &AFPSCharacter::Shoot);
 		PEI->BindAction(InputActions->InputADS, ETriggerEvent::Triggered, this, &AFPSCharacter::ADS);
+		PEI->BindAction(InputActions->InputChangeCamera, ETriggerEvent::Completed, this, &AFPSCharacter::ChangeCamera);
+		PEI->BindAction(InputActions->InputJump, ETriggerEvent::Triggered, this, &AFPSCharacter::Jump);
+		PEI->BindAction(InputActions->InputCrouch, ETriggerEvent::Triggered, this, &AFPSCharacter::Crouch);
 	}
-
 }
 
 void AFPSCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -137,7 +177,8 @@ void AFPSCharacter::OnRep_CurrentWeapon(const AFPSWeapon* OldWeapon)
 	{
 		if (!CurrentWeapon->CurrentOwner)
 		{
-			const FTransform PlacementTransform = CurrentWeapon->PlacementTransform * GetMesh()->GetSocketTransform(FName("hand_r"));
+			const FTransform PlacementTransform = CurrentWeapon->PlacementTransform * GetMesh()->GetSocketTransform(
+				FName("hand_r"));
 			CurrentWeapon->SetActorTransform(PlacementTransform, false, nullptr, ETeleportType::TeleportPhysics);
 			CurrentWeapon->AttachToComponent(GetMesh(), FAttachmentTransformRules::KeepWorldTransform, FName("hand_r"));
 
@@ -155,7 +196,6 @@ void AFPSCharacter::OnRep_CurrentWeapon(const AFPSWeapon* OldWeapon)
 
 	CurrentWeaponChangedDelegate.Broadcast(CurrentWeapon, OldWeapon);
 }
-
 
 void AFPSCharacter::Move(const FInputActionValue& Value)
 {
@@ -191,29 +231,103 @@ void AFPSCharacter::Look(const FInputActionValue& Value)
 	if (Controller != nullptr)
 	{
 		const FVector2D LookValue = Value.Get<FVector2D>();
-
-		if (LookValue.X != 0.f)
+		if (IsFirstPerson)
 		{
-			//UE_LOG(LogTemp, Warning, TEXT("Input Action Value %s (magnitude %f)"),
-			//	*Value.ToString(), Value.GetMagnitude());
-			AddControllerYawInput(LookValue.X);
-		}
+			if (LookValue.X != 0.f)
+			{
+				//UE_LOG(LogTemp, Warning, TEXT("Input Action Value %s (magnitude %f)"),
+				//	*Value.ToString(), Value.GetMagnitude());
+				AddControllerYawInput(LookValue.X);
+			}
 
-		if (LookValue.Y != 0.f)
-		{
-			//UE_LOG(LogTemp, Warning, TEXT("Input Action Value %s (magnitude %f)"),
-			//	*Value.ToString(), Value.GetMagnitude());
-			AddControllerPitchInput(LookValue.Y);
+			if (LookValue.Y != 0.f)
+			{
+				//UE_LOG(LogTemp, Warning, TEXT("Input Action Value %s (magnitude %f)"),
+				//	*Value.ToString(), Value.GetMagnitude());
+				AddControllerPitchInput(LookValue.Y);
+			}
 		}
+		else
+		{
+			if (LookValue.X != 0.f)
+			{
+				//UE_LOG(LogTemp, Warning, TEXT("Input Action Value %s (magnitude %f)"),
+				//	*Value.ToString(), Value.GetMagnitude());
+				AddControllerYawInput(LookValue.X * TurnRateThirdPerson);
+			}
+
+			if (LookValue.Y != 0.f)
+			{
+				//UE_LOG(LogTemp, Warning, TEXT("Input Action Value %s (magnitude %f)"),
+				//	*Value.ToString(), Value.GetMagnitude());
+				AddControllerPitchInput(LookValue.Y * TurnRateThirdPerson);
+			}
+		}
+		
 	}
 }
 
 void AFPSCharacter::Jump(const FInputActionValue& Value)
 {
+	if (Controller != nullptr)
+	{
+		const bool JumpValue = Value.Get<bool>();
+		IsJumping = JumpValue;
+		/*if (JumpValue)
+		{
+			IsJumping = true;
+		}
+		else
+		{
+			IsJumping = false;
+		}*/
+	}
 }
 
 void AFPSCharacter::Crouch(const FInputActionValue& Value)
 {
+	if (Controller != nullptr)
+	{
+		const bool CrouchValue = Value.Get<bool>();
+		IsCrouching = CrouchValue;
+		/*if (CrouchValue)
+		{
+			IsCrouching = true;
+		}
+		else
+		{
+			IsCrouching = false;
+		}*/
+	}
+}
+
+void AFPSCharacter::ChangeCamera(const FInputActionValue& Value)
+{
+	if (Controller != nullptr)
+	{
+		const bool CameraValue = Value.Get<bool>();
+		if (CameraValue)
+		{
+			IsFirstPerson = !IsFirstPerson;
+			if (!IsFirstPerson)
+			{
+				// Adjust Camera to Third Person View
+				ThirdPersonCamera->SetActive(true);
+				FirstPersonCamera->SetActive(false);
+				//PlayerController->SetViewTargetWithBlend(this, 1.f);
+				CurrentCamera = ThirdPersonCamera;
+			}
+			else
+			{
+			
+				// Adjust Camera to First Person View
+				ThirdPersonCamera->SetActive(false);
+				FirstPersonCamera->SetActive(true);
+				//PlayerController->SetViewTargetWithBlend(this, 1.f);
+				CurrentCamera = FirstPersonCamera;
+			}
+		}
+	}
 }
 
 void AFPSCharacter::ADS(const FInputActionValue& Value)
@@ -221,24 +335,38 @@ void AFPSCharacter::ADS(const FInputActionValue& Value)
 	if (Controller != nullptr)
 	{
 		const bool ADSValue = Value.Get<bool>();
-		if (ADSValue)
+		IsADS = ADSValue;
+		/*if (ADSValue)
 		{
 			IsADS = true;
 		}
 		else
 		{
 			IsADS = false;
-		}
+		}*/
 	}
 }
 
 void AFPSCharacter::Shoot(const FInputActionValue& Value)
 {
+	if (Controller != nullptr)
+	{
+		const bool ShootingValue = Value.Get<bool>();
+		IsShooting = ShootingValue;
+		/*if (ShootingValue)
+		{
+			IsShooting = true;
+		}
+		else
+		{
+			IsShooting = false;
+		}*/
+	}
 }
 
 void AFPSCharacter::EquipWeapon(const int32 Index)
 {
-	if(!Weapons.IsValidIndex(Index) || CurrentWeapon == Weapons[Index]) return;
+	if (!Weapons.IsValidIndex(Index) || CurrentWeapon == Weapons[Index]) return;
 	if (IsLocallyControlled())
 	{
 		CurrentIndex = Index;
@@ -246,9 +374,8 @@ void AFPSCharacter::EquipWeapon(const int32 Index)
 		const AFPSWeapon* OldWeapon = CurrentWeapon;
 		CurrentWeapon = Weapons[Index];
 		OnRep_CurrentWeapon(OldWeapon);
-		
 	}
-	else if(!HasAuthority())
+	else if (!HasAuthority())
 	{
 		Server_SetCurrentWeapon(Weapons[Index]);
 	}
@@ -279,9 +406,7 @@ void AFPSCharacter::LastWeapon(const FInputActionValue& Value)
 	}
 }
 
-//
-// Online Sessions
-//
+/* Online Sessions
 void AFPSCharacter::CreateGameSession()
 {
 	if (!OnlineSessionInterface.IsValid()) return;
@@ -419,3 +544,4 @@ void AFPSCharacter::OnJoinSessionComplete(FName SessionName, EOnJoinSessionCompl
 		}
 	}
 }
+*/

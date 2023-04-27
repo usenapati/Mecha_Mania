@@ -14,6 +14,7 @@ UCLASS()
 class MECHAMANIA_API UFPSAnimInstance : public UAnimInstance
 {
 	GENERATED_BODY()
+
 public:
 	UFPSAnimInstance();
 

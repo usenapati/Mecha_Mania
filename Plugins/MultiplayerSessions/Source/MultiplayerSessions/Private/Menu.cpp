@@ -41,7 +41,8 @@ void UMenu::MenuSetup(int32 NumberOfPublicConnections, FString TypeOfMatch, FStr
 		MultiplayerSessionsSubsystem->MultiplayerOnCreateSessionComplete.AddDynamic(this, &ThisClass::OnCreateSession);
 		MultiplayerSessionsSubsystem->MultiplayerOnFindSessionsComplete.AddUObject(this, &ThisClass::OnFindSessions);
 		MultiplayerSessionsSubsystem->MultiplayerOnJoinSessionComplete.AddUObject(this, &ThisClass::OnJoinSession);
-		MultiplayerSessionsSubsystem->MultiplayerOnDestroySessionComplete.AddDynamic(this, &ThisClass::OnDestroySession);
+		MultiplayerSessionsSubsystem->MultiplayerOnDestroySessionComplete.
+		                              AddDynamic(this, &ThisClass::OnDestroySession);
 		MultiplayerSessionsSubsystem->MultiplayerOnStartSessionComplete.AddDynamic(this, &ThisClass::OnStartSession);
 	}
 }
@@ -90,7 +91,7 @@ void UMenu::OnCreateSession(bool bWasSuccessful)
 					15.f,
 					FColor::Blue,
 					FString(TEXT("Moved to lobby!"))
-					);
+				);
 			}
 			else
 			{
@@ -99,10 +100,10 @@ void UMenu::OnCreateSession(bool bWasSuccessful)
 					15.f,
 					FColor::Red,
 					FString(TEXT("Move to lobby failed !"))
-					);
+				);
 			}
 		}
-	} 
+	}
 	else
 	{
 		if (GEngine)
@@ -114,6 +115,7 @@ void UMenu::OnCreateSession(bool bWasSuccessful)
 				FString::Printf(TEXT("Failed to create session"))
 			);
 		}
+		HostButton->SetIsEnabled(true);
 	}
 }
 
@@ -122,7 +124,7 @@ void UMenu::OnFindSessions(const TArray<FOnlineSessionSearchResult>& SessionResu
 	// TODO Can be updated later
 	if (MultiplayerSessionsSubsystem == nullptr) return;
 	FString SettingsValue;
-	for (auto Result: SessionResults)
+	for (auto Result : SessionResults)
 	{
 		Result.Session.SessionSettings.Get(FName("MatchType"), SettingsValue);
 		if (SettingsValue == MatchType)
@@ -131,13 +133,14 @@ void UMenu::OnFindSessions(const TArray<FOnlineSessionSearchResult>& SessionResu
 			return;
 		}
 	}
+	if (!bWasSuccessful || SessionResults.Num() == 0) JoinButton->SetIsEnabled(true);
 }
 
 void UMenu::OnJoinSession(EOnJoinSessionCompleteResult::Type Result)
 {
 	IOnlineSubsystem* Subsystem = IOnlineSubsystem::Get();
 	if (!Subsystem) return;
-	
+
 	IOnlineSessionPtr SessionInterface = Subsystem->GetSessionInterface();
 	if (!SessionInterface.IsValid()) return;
 
@@ -148,6 +151,11 @@ void UMenu::OnJoinSession(EOnJoinSessionCompleteResult::Type Result)
 	if (PlayerController)
 	{
 		PlayerController->ClientTravel(Address, ETravelType::TRAVEL_Absolute);
+	}
+
+	if (Result != EOnJoinSessionCompleteResult::Success)
+	{
+		JoinButton->SetIsEnabled(true);
 	}
 }
 
@@ -161,20 +169,20 @@ void UMenu::OnStartSession(bool bWasSuccessful)
 
 void UMenu::HostButtonClicked()
 {
+	HostButton->SetIsEnabled(false);
 	if (MultiplayerSessionsSubsystem)
 	{
 		MultiplayerSessionsSubsystem->CreateSession(NumPublicConnections, MatchType);
-		
 	}
 }
 
 void UMenu::JoinButtonClicked()
 {
+	JoinButton->SetIsEnabled(false);
 	if (MultiplayerSessionsSubsystem)
 	{
 		MultiplayerSessionsSubsystem->FindSessions(10000);
 	}
-
 }
 
 void UMenu::MenuTearDown()
@@ -191,5 +199,4 @@ void UMenu::MenuTearDown()
 			PlayerController->SetShowMouseCursor(false);
 		}
 	}
-
 }

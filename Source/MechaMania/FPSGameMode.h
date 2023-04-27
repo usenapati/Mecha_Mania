@@ -13,5 +13,4 @@ UCLASS()
 class MECHAMANIA_API AFPSGameMode : public AGameModeBase
 {
 	GENERATED_BODY()
-	
 };

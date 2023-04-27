@@ -6,7 +6,7 @@
 // Sets default values
 AFPSWeapon::AFPSWeapon()
 {
- 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
+	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = false;
 
 	SetReplicates(true);
@@ -26,5 +26,3 @@ void AFPSWeapon::BeginPlay()
 	if (!CurrentOwner)
 		Mesh->SetVisibility(false);
 }
-
-

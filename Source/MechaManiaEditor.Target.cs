@@ -10,6 +10,6 @@ public class MechaManiaEditorTarget : TargetRules
 		Type = TargetType.Editor;
 		DefaultBuildSettings = BuildSettingsVersion.V2;
 
-		ExtraModuleNames.AddRange( new string[] { "MechaMania" } );
+		ExtraModuleNames.AddRange(new string[] { "MechaMania" });
 	}
 }

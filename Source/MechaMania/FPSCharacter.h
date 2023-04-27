@@ -16,25 +16,32 @@ UCLASS()
 class MECHAMANIA_API AFPSCharacter : public ACharacter
 {
 	GENERATED_BODY()
+public:
+	AFPSCharacter();
+	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 protected:
+	virtual void BeginPlay() override;
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
 	APlayerController* PlayerController;
 	/** Follow camera */
-	UPROPERTY(EditAnywhere, Category = Camera)
+
+	UPROPERTY(VisibleAnywhere, Category = Camera)
 	class UCameraComponent* FirstPersonCamera;
 
-	UPROPERTY(EditAnywhere, Category = Camera)
+	UPROPERTY(VisibleAnywhere, Category = Camera)
 	class UCameraComponent* ThirdPersonCamera;
 
-	UPROPERTY(EditAnywhere, Category = Camera)
+	UPROPERTY(VisibleAnywhere, Category = Camera)
 	class UCameraComponent* CurrentCamera;
 
 	/** Camera boom positioning the camera behind the character */
-	UPROPERTY(EditAnywhere, Category = Camera)
+	UPROPERTY(VisibleAnywhere, Category = Camera)
 	class USpringArmComponent* CameraBoom;
 
+	UFUNCTION(BlueprintImplementableEvent)
+	void ChangeCameraEvent();
 public:
-	AFPSCharacter();
-
 	/** Base turn rate, in deg/sec. Other scaling may affect final turn rate. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category=Input)
 	float TurnRateGamepad;
@@ -43,10 +50,10 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category=Input)
 	float TurnRateThirdPerson;
 
-protected:
-	virtual void BeginPlay() override;
-	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
-
+	/** Returns CameraBoom subobject **/
+	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
+	/** Returns FollowCamera subobject **/
+	FORCEINLINE class UCameraComponent* GetCamera() const { return CurrentCamera; }
 
 #pragma region /** Locomotion */
 	/** Called for forwards/backward input */
@@ -67,15 +74,6 @@ protected:
 	 */
 	void LookUpAtRate(float Rate);
 #pragma endregion
-
-public:
-	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
-
-
-	/** Returns CameraBoom subobject **/
-	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
-	/** Returns FollowCamera subobject **/
-	FORCEINLINE class UCameraComponent* GetCamera() const { return CurrentCamera; }
 
 #pragma region /** Networked Weapons System */
 

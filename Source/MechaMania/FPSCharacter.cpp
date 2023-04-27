@@ -52,7 +52,7 @@ AFPSCharacter::AFPSCharacter() //:
 	GetCharacterMovement()->MinAnalogWalkSpeed = 20.f;
 	GetCharacterMovement()->BrakingDecelerationWalking = 2000.f;
 	**/
-	PrimaryActorTick.bCanEverTick = false;
+	PrimaryActorTick.bCanEverTick = true;
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
 	CameraBoom->SetupAttachment(GetMesh());
 	//Setting default properties of the SpringArmComp
@@ -81,13 +81,14 @@ AFPSCharacter::AFPSCharacter() //:
 	}
 	else
 	{
-			*/
+			
 		// Adjust Camera to First Person View
 		ThirdPersonCamera->SetActive(false);
 		FirstPersonCamera->SetActive(true);
 		//PlayerController->SetViewTargetWithBlend(this, 1.f);
 		CurrentCamera = FirstPersonCamera;
-	
+	}
+	*/
 	
 	
 	// Online Subsystem
@@ -157,7 +158,7 @@ void AFPSCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompon
 		PEI->BindAction(InputActions->InputLastWeapon, ETriggerEvent::Triggered, this, &AFPSCharacter::LastWeapon);
 		PEI->BindAction(InputActions->InputShoot, ETriggerEvent::Triggered, this, &AFPSCharacter::Shoot);
 		PEI->BindAction(InputActions->InputADS, ETriggerEvent::Triggered, this, &AFPSCharacter::ADS);
-		PEI->BindAction(InputActions->InputChangeCamera, ETriggerEvent::Completed, this, &AFPSCharacter::ChangeCamera);
+		PEI->BindAction(InputActions->InputChangeCamera, ETriggerEvent::Triggered, this, &AFPSCharacter::ChangeCamera);
 		PEI->BindAction(InputActions->InputJump, ETriggerEvent::Triggered, this, &AFPSCharacter::Jump);
 		PEI->BindAction(InputActions->InputCrouch, ETriggerEvent::Triggered, this, &AFPSCharacter::Crouch);
 	}
@@ -309,23 +310,7 @@ void AFPSCharacter::ChangeCamera(const FInputActionValue& Value)
 		if (CameraValue)
 		{
 			IsFirstPerson = !IsFirstPerson;
-			if (!IsFirstPerson)
-			{
-				// Adjust Camera to Third Person View
-				ThirdPersonCamera->SetActive(true);
-				FirstPersonCamera->SetActive(false);
-				//PlayerController->SetViewTargetWithBlend(this, 1.f);
-				CurrentCamera = ThirdPersonCamera;
-			}
-			else
-			{
-			
-				// Adjust Camera to First Person View
-				ThirdPersonCamera->SetActive(false);
-				FirstPersonCamera->SetActive(true);
-				//PlayerController->SetViewTargetWithBlend(this, 1.f);
-				CurrentCamera = FirstPersonCamera;
-			}
+			ChangeCameraEvent();
 		}
 	}
 }

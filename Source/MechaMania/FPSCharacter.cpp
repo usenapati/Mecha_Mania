@@ -52,7 +52,13 @@ AFPSCharacter::AFPSCharacter() //:
 	GetCharacterMovement()->MinAnalogWalkSpeed = 20.f;
 	GetCharacterMovement()->BrakingDecelerationWalking = 2000.f;
 	**/
-	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.bCanEverTick = false;
+	bStartInFirstPersonPerspective = true;
+	bIsFirstPersonPerspective = false;
+	Default1PFOV = 90.0f;
+	Default3PFOV = 90.0f;
+	BaseTurnRate = 1.f;
+	
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
 	CameraBoom->SetupAttachment(GetMesh());
 	//Setting default properties of the SpringArmComp
@@ -60,16 +66,16 @@ AFPSCharacter::AFPSCharacter() //:
 	CameraBoom->bEnableCameraLag = true;
 	CameraBoom->TargetArmLength = 300.0f;
 	
-	FirstPersonCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FirstPersonCamera"));
-	FirstPersonCamera->bUsePawnControlRotation = true;
-	FirstPersonCamera->SetupAttachment(GetMesh(), FName("head"));
-
 	ThirdPersonCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("ThirdPersonCamera"));
-	ThirdPersonCamera->bUsePawnControlRotation = false;
 	ThirdPersonCamera->AttachToComponent(CameraBoom, FAttachmentTransformRules::KeepRelativeTransform,
 	                                     USpringArmComponent::SocketName);
+	ThirdPersonCamera->bUsePawnControlRotation = false;
+	ThirdPersonCamera->FieldOfView = Default3PFOV;
 
-	PlayerController = UGameplayStatics::GetPlayerController(this, 0);
+	FirstPersonCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FirstPersonCamera"));
+	FirstPersonCamera->SetupAttachment(GetMesh(), FName("head"));
+	FirstPersonCamera->bUsePawnControlRotation = true;
+	FirstPersonCamera->FieldOfView = Default1PFOV;
 	/*
 	if (!IsFirstPerson)
 	{
@@ -111,6 +117,11 @@ AFPSCharacter::AFPSCharacter() //:
 */
 }
 
+bool AFPSCharacter::IsInFirstPersonPerspective() const
+{
+	return bIsFirstPersonPerspective;
+}
+
 void AFPSCharacter::BeginPlay()
 {
 	Super::BeginPlay();
@@ -129,6 +140,75 @@ void AFPSCharacter::BeginPlay()
 				CurrentWeapon = SpawnedWeapon;
 				OnRep_CurrentWeapon(nullptr);
 			}
+		}
+	}
+}
+
+void AFPSCharacter::PostInitializeComponents()
+{
+	Super::PostInitializeComponents();
+
+	StartingThirdPersonCameraBoomArmLength = CameraBoom->TargetArmLength;
+	StartingThirdPersonCameraBoomArmLocation = CameraBoom->GetRelativeLocation();
+}
+
+UCameraComponent* AFPSCharacter::Get1PCamera_Implementation()
+{
+	return FirstPersonCamera;
+}
+
+UCameraComponent* AFPSCharacter::Get3PCamera_Implementation()
+{
+	return ThirdPersonCamera;
+}
+
+void AFPSCharacter::TogglePerspective()
+{
+	bIsFirstPersonPerspective = !bIsFirstPersonPerspective;
+	SetPerspective(bIsFirstPersonPerspective);
+}
+
+void AFPSCharacter::SetPerspective(bool Is1PPerspective)
+{
+	if (!IsValid(FirstPersonCamera))
+	{
+		GEngine->AddOnScreenDebugMessage(
+				-1,
+				15.f,
+				FColor::Red,
+				FString::Printf(TEXT("FP Cam is not valid"))
+			);
+		return;
+	}
+	if (!IsValid(ThirdPersonCamera))
+	{
+		GEngine->AddOnScreenDebugMessage(
+				-1,
+				15.f,
+				FColor::Red,
+				FString::Printf(TEXT("TP Cam is not valid"))
+			);
+		return;
+	}
+	
+	APlayerController* PC = Cast<APlayerController>(GetController());
+	if (PC && PC->IsLocalController())
+	{
+		if (Is1PPerspective)
+		{
+			//ThirdPersonCamera->SetActive(false);
+			//FirstPersonCamera->SetActive(true);
+			ThirdPersonCamera->Deactivate();
+			FirstPersonCamera->Activate();
+			PC->SetViewTarget(this);
+		}
+		else
+		{
+			//FirstPersonCamera->SetActive(false);
+			//ThirdPersonCamera->SetActive(true);
+			FirstPersonCamera->Deactivate();
+			ThirdPersonCamera->Activate();
+			PC->SetViewTarget(this);
 		}
 	}
 }
@@ -254,14 +334,14 @@ void AFPSCharacter::Look(const FInputActionValue& Value)
 			{
 				//UE_LOG(LogTemp, Warning, TEXT("Input Action Value %s (magnitude %f)"),
 				//	*Value.ToString(), Value.GetMagnitude());
-				AddControllerYawInput(LookValue.X * TurnRateThirdPerson);
+				AddControllerYawInput(LookValue.X * BaseTurnRate);
 			}
 
 			if (LookValue.Y != 0.f)
 			{
 				//UE_LOG(LogTemp, Warning, TEXT("Input Action Value %s (magnitude %f)"),
 				//	*Value.ToString(), Value.GetMagnitude());
-				AddControllerPitchInput(LookValue.Y * TurnRateThirdPerson);
+				AddControllerPitchInput(LookValue.Y * BaseTurnRate);
 			}
 		}
 		
@@ -309,8 +389,7 @@ void AFPSCharacter::ChangeCamera(const FInputActionValue& Value)
 		const bool CameraValue = Value.Get<bool>();
 		if (CameraValue)
 		{
-			IsFirstPerson = !IsFirstPerson;
-			ChangeCameraEvent();
+			TogglePerspective();
 		}
 	}
 }

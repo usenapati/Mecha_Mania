@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
+#include "Camera/CameraComponent.h"
 #include "EnhancedInput/Public/InputActionValue.h"
 #include "Interfaces/OnlineSessionInterface.h"
 #include "FPSCharacter.generated.h"
@@ -11,6 +12,8 @@
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FCurrentWeaponChangedDelegate, class AFPSWeapon*, CurrentWeapon,
                                              const class AFPSWeapon*, OldWeapon);
+class UCameraComponent;
+class USpringArmComponent;
 
 UCLASS()
 class MECHAMANIA_API AFPSCharacter : public ACharacter
@@ -18,42 +21,59 @@ class MECHAMANIA_API AFPSCharacter : public ACharacter
 	GENERATED_BODY()
 public:
 	AFPSCharacter();
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "MechaMania|FPSCharacter")
+	bool bStartInFirstPersonPerspective;
+
+	UFUNCTION(BlueprintCallable, Category = "MechaMania|FPSCharacter")
+	virtual bool IsInFirstPersonPerspective() const;
+
 protected:
 	virtual void BeginPlay() override;
-	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+	virtual void PostInitializeComponents() override;
+	
+	/** Camera Properties */
+	UPROPERTY(BlueprintReadOnly, Category = "MechaMania|Camera")
+	float StartingThirdPersonCameraBoomArmLength;
 
-	APlayerController* PlayerController;
-	/** Follow camera */
+	UPROPERTY(BlueprintReadOnly, Category = "MechaMania|Camera")
+	FVector StartingThirdPersonCameraBoomArmLocation;
 
-	UPROPERTY(VisibleAnywhere, Category = Camera)
-	class UCameraComponent* FirstPersonCamera;
+	UPROPERTY(BlueprintReadOnly, Category = "MechaMania|Camera")
+	bool bIsFirstPersonPerspective;
 
-	UPROPERTY(VisibleAnywhere, Category = Camera)
-	class UCameraComponent* ThirdPersonCamera;
+	UPROPERTY(BlueprintReadOnly, Category = "MechaMania|Camera")
+	float Default1PFOV;
 
-	UPROPERTY(VisibleAnywhere, Category = Camera)
-	class UCameraComponent* CurrentCamera;
+	UPROPERTY(BlueprintReadOnly, Category = "MechaMania|Camera")
+	float Default3PFOV;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "MechaMania|Camera")
+	UCameraComponent* FirstPersonCamera;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "MechaMania|Camera")
+	UCameraComponent* ThirdPersonCamera;
+	
 	/** Camera boom positioning the camera behind the character */
-	UPROPERTY(VisibleAnywhere, Category = Camera)
-	class USpringArmComponent* CameraBoom;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "MechaMania|Camera")
+	USpringArmComponent* CameraBoom;
 
-	UFUNCTION(BlueprintImplementableEvent)
-	void ChangeCameraEvent();
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "MechaMania|Camera")
+	UCameraComponent* Get1PCamera();
+
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "MechaMania|Camera")
+	UCameraComponent* Get3PCamera();
+	
+	void TogglePerspective();
+
+	void SetPerspective(bool Is1PPerspective);
+
 public:
 	/** Base turn rate, in deg/sec. Other scaling may affect final turn rate. */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category=Input)
-	float TurnRateGamepad;
-
-	/** Base turn rate, in deg/sec. Other scaling may affect final turn rate. */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category=Input)
-	float TurnRateThirdPerson;
-
-	/** Returns CameraBoom subobject **/
-	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
-	/** Returns FollowCamera subobject **/
-	FORCEINLINE class UCameraComponent* GetCamera() const { return CurrentCamera; }
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="MechaMania|Input")
+	float BaseTurnRate;
 
 #pragma region /** Locomotion */
 	/** Called for forwards/backward input */
@@ -79,24 +99,24 @@ public:
 
 protected:
 	// Weapon classes spawned by default
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Configurations")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "MechaMania|Configurations")
 	TArray<TSubclassOf<class AFPSWeapon>> DefaultWeapons;
 
 public:
-	UPROPERTY(VisibleInstanceOnly, BlueprintReadWrite, Replicated, Category = "State")
+	UPROPERTY(VisibleInstanceOnly, BlueprintReadWrite, Replicated, Category = "MechaMania|Inventory")
 	TArray<class AFPSWeapon*> Weapons;
 
-	UPROPERTY(VisibleInstanceOnly, BlueprintReadWrite, ReplicatedUsing = OnRep_CurrentWeapon, Category = "State")
+	UPROPERTY(VisibleInstanceOnly, BlueprintReadWrite, ReplicatedUsing = OnRep_CurrentWeapon, Category = "MechaMania|Inventory")
 	class AFPSWeapon* CurrentWeapon;
 
 	// Called whenever Current Weapon is changed
-	UPROPERTY(BlueprintAssignable, Category = "Delegates")
+	UPROPERTY(BlueprintAssignable, Category = "MechaMania|Delegates")
 	FCurrentWeaponChangedDelegate CurrentWeaponChangedDelegate;
 
-	UPROPERTY(VisibleInstanceOnly, BlueprintReadWrite, Category = "State")
+	UPROPERTY(VisibleInstanceOnly, BlueprintReadWrite, Category = "MechaMania|Inventory")
 	int32 CurrentIndex = 0;
 
-	UFUNCTION(BlueprintCallable, Category = "Character")
+	UFUNCTION(BlueprintCallable, Category = "MechaMania|FPSCharacter")
 	virtual void EquipWeapon(const int32 Index);
 
 protected:
@@ -136,22 +156,22 @@ private:
 #pragma region /** Input */
 
 public:
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Animation")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "MechaMania|Animation")
 	bool IsFirstPerson;
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Animation")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "MechaMania|Animation")
 	bool IsShooting;
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Animation")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "MechaMania|Animation")
 	bool IsADS;
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Animation")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "MechaMania|Animation")
 	bool IsJumping;
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Animation")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "MechaMania|Animation")
 	bool IsCrouching;
 
 protected:
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Enhanced Input")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "MechaMania|Enhanced Input")
 	class UInputMappingContext* InputMapping;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Enhanced Input")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "MechaMania|Enhanced Input")
 	class UInputConfigData* InputActions;
 	// Movement Inputs
 	void Move(const FInputActionValue& Value); // Handle move input

@@ -34,6 +34,14 @@ void ALobbyGameMode::PostLogin(APlayerController* NewPlayer)
 				);
 			}
 		}
+		if (NumberOfPlayers == 2)
+		{
+			UWorld* World = GetWorld();
+			if (World)
+			{
+				World->ServerTravel(FString("Game/Maps/FirstPersonMap?listen"));
+			}
+		}
 	}
 }
 

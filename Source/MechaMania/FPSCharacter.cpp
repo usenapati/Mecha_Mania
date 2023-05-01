@@ -18,6 +18,7 @@
 #include "Net/UnrealNetwork.h"
 #include "OnlineSubsystem.h"
 #include "OnlineSessionSettings.h"
+#include "Components/WidgetComponent.h"
 #include "Interfaces/OnlineSessionInterface.h"
 #include "Kismet/GameplayStatics.h"
 
@@ -52,7 +53,7 @@ AFPSCharacter::AFPSCharacter() //:
 	GetCharacterMovement()->MinAnalogWalkSpeed = 20.f;
 	GetCharacterMovement()->BrakingDecelerationWalking = 2000.f;
 	**/
-	PrimaryActorTick.bCanEverTick = false;
+	PrimaryActorTick.bCanEverTick = true;
 	bStartInFirstPersonPerspective = true;
 	bIsFirstPersonPerspective = false;
 	Default1PFOV = 90.0f;
@@ -76,6 +77,13 @@ AFPSCharacter::AFPSCharacter() //:
 	FirstPersonCamera->SetupAttachment(GetMesh(), FName("head"));
 	FirstPersonCamera->bUsePawnControlRotation = true;
 	FirstPersonCamera->FieldOfView = Default1PFOV;
+
+	GetCharacterMovement()->bOrientRotationToMovement = true;
+
+	OverheadWidget = CreateDefaultSubobject<UWidgetComponent>(TEXT("OverheadWidget"));
+	OverheadWidget->SetupAttachment(RootComponent);
+	
+	
 	/*
 	if (!IsFirstPerson)
 	{
@@ -141,6 +149,24 @@ void AFPSCharacter::BeginPlay()
 				OnRep_CurrentWeapon(nullptr);
 			}
 		}
+	}
+	APlayerController* PC = Cast<APlayerController>(GetController());
+	// Set Initial Perspective
+	if (PC && PC->IsLocalController())
+	{
+		if (bStartInFirstPersonPerspective)
+		{
+			ThirdPersonCamera->Deactivate();
+			FirstPersonCamera->Activate();
+			PC->SetViewTarget(this);
+		}
+		else
+		{
+			FirstPersonCamera->Deactivate();
+			ThirdPersonCamera->Activate();
+			PC->SetViewTarget(this);
+		}
+		
 	}
 }
 

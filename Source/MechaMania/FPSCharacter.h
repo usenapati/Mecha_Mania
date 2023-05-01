@@ -70,6 +70,10 @@ protected:
 
 	void SetPerspective(bool Is1PPerspective);
 
+	// Widgets
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	class UWidgetComponent* OverheadWidget;
+
 public:
 	/** Base turn rate, in deg/sec. Other scaling may affect final turn rate. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="MechaMania|Input")

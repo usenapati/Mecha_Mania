@@ -50,4 +50,13 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Anim")
 	FTransform RelativeCameraTransform;
+private:
+	UPROPERTY(BlueprintReadOnly, Category = "MechaMania|Character", meta = (AllowPrivateAccess = "true"))
+	float Speed;
+	
+	UPROPERTY(BlueprintReadOnly, Category = "MechaMania|Character", meta = (AllowPrivateAccess = "true"))
+	bool bIsInAir;
+
+	UPROPERTY(BlueprintReadOnly, Category = "MechaMania|Character", meta = (AllowPrivateAccess = "true"))
+	bool bIsAccelerating;
 };

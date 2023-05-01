@@ -2,6 +2,9 @@
 
 
 #include "FPSWeapon.h"
+#include "FPSCharacter.h"
+#include "Components/SphereComponent.h"
+#include "Components/WidgetComponent.h"
 
 // Sets default values
 AFPSWeapon::AFPSWeapon()
@@ -11,18 +14,49 @@ AFPSWeapon::AFPSWeapon()
 
 	SetReplicates(true);
 
-	Root = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
-	RootComponent = Root;
+	WeaponMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("WeaponMesh"));
+	WeaponMesh->SetupAttachment(RootComponent);
+	SetRootComponent(WeaponMesh);
+	
+	WeaponMesh->SetCollisionResponseToAllChannels(ECR_Block);
+	WeaponMesh->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
+	WeaponMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
-	Mesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("Mesh"));
-	Mesh->SetupAttachment(Root);
+	AreaSphere = CreateDefaultSubobject<USphereComponent>(TEXT("AreaSphere"));
+	AreaSphere->SetupAttachment(RootComponent);
+	AreaSphere->SetCollisionResponseToAllChannels(ECR_Ignore);
+	AreaSphere->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+	PickupWidget = CreateDefaultSubobject<UWidgetComponent>(TEXT("PickupWidget"));
+	PickupWidget->SetupAttachment(RootComponent);
 }
 
-// Called when the game starts or when spawned
 void AFPSWeapon::BeginPlay()
 {
 	Super::BeginPlay();
+	
+	if (HasAuthority())
+	{
+		AreaSphere->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+		AreaSphere->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
+		AreaSphere->OnComponentBeginOverlap.AddDynamic(this, &AFPSWeapon::OnSphereOverlap);
+	}
 
-	if (!CurrentOwner)
-		Mesh->SetVisibility(false);
+	if (PickupWidget)
+	{
+		PickupWidget->SetVisibility(false);
+	}
+
+	//if (!CurrentOwner)
+	//	WeaponMesh->SetVisibility(false);
+}
+
+void AFPSWeapon::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
+	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+{
+	AFPSCharacter* FPSCharacter = Cast<AFPSCharacter>(OtherActor);
+	if (FPSCharacter && PickupWidget)
+	{
+		PickupWidget->SetVisibility(true);
+	}
 }

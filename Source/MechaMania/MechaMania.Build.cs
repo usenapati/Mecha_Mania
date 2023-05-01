@@ -10,7 +10,7 @@ public class MechaMania : ModuleRules
 
 		PublicDependencyModuleNames.AddRange(new string[]
 		{
-			"Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput", "OnlineSubsystemSteam", "OnlineSubsystem"
+			"Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput", "OnlineSubsystemSteam", "OnlineSubsystem", "UMG"
 		});
 
 		PrivateDependencyModuleNames.AddRange(new string[] { });

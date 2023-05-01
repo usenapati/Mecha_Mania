@@ -265,8 +265,8 @@ void AFPSCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompon
 		PEI->BindAction(InputActions->InputShoot, ETriggerEvent::Triggered, this, &AFPSCharacter::Shoot);
 		PEI->BindAction(InputActions->InputADS, ETriggerEvent::Triggered, this, &AFPSCharacter::ADS);
 		PEI->BindAction(InputActions->InputChangeCamera, ETriggerEvent::Triggered, this, &AFPSCharacter::ChangeCamera);
-		PEI->BindAction(InputActions->InputJump, ETriggerEvent::Triggered, this, &AFPSCharacter::Jump);
-		PEI->BindAction(InputActions->InputCrouch, ETriggerEvent::Triggered, this, &AFPSCharacter::Crouch);
+		PEI->BindAction(InputActions->InputJump, ETriggerEvent::Triggered, this, &AFPSCharacter::JumpInput);
+		PEI->BindAction(InputActions->InputCrouch, ETriggerEvent::Triggered, this, &AFPSCharacter::CrouchInput);
 	}
 }
 
@@ -289,16 +289,16 @@ void AFPSCharacter::OnRep_CurrentWeapon(const AFPSWeapon* OldWeapon)
 			CurrentWeapon->SetActorTransform(PlacementTransform, false, nullptr, ETeleportType::TeleportPhysics);
 			CurrentWeapon->AttachToComponent(GetMesh(), FAttachmentTransformRules::KeepWorldTransform, FName("hand_r"));
 
-			CurrentWeapon->Mesh->SetVisibility(true);
+			CurrentWeapon->WeaponMesh->SetVisibility(true);
 			CurrentWeapon->CurrentOwner = this;
 		}
 
-		CurrentWeapon->Mesh->SetVisibility(true);
+		CurrentWeapon->WeaponMesh->SetVisibility(true);
 	}
 
 	if (OldWeapon)
 	{
-		OldWeapon->Mesh->SetVisibility(false);
+		OldWeapon->WeaponMesh->SetVisibility(false);
 	}
 
 	CurrentWeaponChangedDelegate.Broadcast(CurrentWeapon, OldWeapon);
@@ -374,12 +374,16 @@ void AFPSCharacter::Look(const FInputActionValue& Value)
 	}
 }
 
-void AFPSCharacter::Jump(const FInputActionValue& Value)
+void AFPSCharacter::JumpInput(const FInputActionValue& Value)
 {
 	if (Controller != nullptr)
 	{
 		const bool JumpValue = Value.Get<bool>();
 		IsJumping = JumpValue;
+		if (IsJumping)
+		{
+			Jump();
+		}
 		/*if (JumpValue)
 		{
 			IsJumping = true;
@@ -391,12 +395,16 @@ void AFPSCharacter::Jump(const FInputActionValue& Value)
 	}
 }
 
-void AFPSCharacter::Crouch(const FInputActionValue& Value)
+void AFPSCharacter::CrouchInput(const FInputActionValue& Value)
 {
 	if (Controller != nullptr)
 	{
 		const bool CrouchValue = Value.Get<bool>();
 		IsCrouching = CrouchValue;
+		if (IsCrouching)
+		{
+			Crouch();
+		}
 		/*if (CrouchValue)
 		{
 			IsCrouching = true;

@@ -4,7 +4,18 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "FPSCharacter.h"
 #include "FPSWeapon.generated.h"
+
+UENUM(BlueprintType)
+enum class EWeaponState : uint8
+{
+	EWS_Initial UMETA(DisplayName = "Initial State"),
+	EWS_Equipped UMETA(DisplayName = "Equipped"),
+	EWS_Dropped UMETA(DisplayName = "Dropped"),
+	
+	EWS_MAX UMETA(DisplayName = "DefaultMAX")
+};
 
 USTRUCT(BlueprintType)
 struct FIKProperties
@@ -27,26 +38,39 @@ class MECHAMANIA_API AFPSWeapon : public AActor
 	GENERATED_BODY()
 
 public:
-	// Sets default values for this actor's properties
 	AFPSWeapon();
 
 protected:
-	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
+	UFUNCTION()
+	virtual void OnSphereOverlap(
+		UPrimitiveComponent* OverlappedComponent,
+		AActor* OtherActor,
+		UPrimitiveComponent* OtherComp,
+		int32 OtherBodyIndex,
+		bool bFromSweep,
+		const FHitResult& SweepResult);
+
 public:
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Component")
-	class USceneComponent* Root;
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "MechaMania|Weapon Properties")
+	class USkeletalMeshComponent* WeaponMesh;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Component")
-	class USkeletalMeshComponent* Mesh;
-
-	UPROPERTY(VisibleInstanceOnly, BlueprintReadWrite, Category = "State")
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "MechaMania|Weapon Properties")
+	class USphereComponent* AreaSphere;
+	
+	UPROPERTY(VisibleInstanceOnly, BlueprintReadWrite, Category = "MechaMania|Weapon State")
 	class AFPSCharacter* CurrentOwner;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Configurations")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "MechaMania|Configurations")
 	FIKProperties IKProperties;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Configurations")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "MechaMania|Configurations")
 	FTransform PlacementTransform;
+private:
+	UPROPERTY(VisibleAnywhere, Category = "MechaMania|Weapon State")
+	EWeaponState WeaponState;
+
+	UPROPERTY(VisibleAnywhere, Category = "MechaMania|Weapon Properties")
+	class UWidgetComponent* PickupWidget;
 };

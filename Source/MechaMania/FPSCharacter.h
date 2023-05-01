@@ -180,8 +180,8 @@ protected:
 	// Movement Inputs
 	void Move(const FInputActionValue& Value); // Handle move input
 	void Look(const FInputActionValue& Value); // Handle look input
-	void Jump(const FInputActionValue& Value);
-	void Crouch(const FInputActionValue& Value);
+	void JumpInput(const FInputActionValue& Value);
+	void CrouchInput(const FInputActionValue& Value);
 	void ChangeCamera(const FInputActionValue& Value); // Switch between third person and first person camera
 
 	// Weapon Inputs

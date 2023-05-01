@@ -21,6 +21,7 @@ class MECHAMANIA_API AFPSCharacter : public ACharacter
 	GENERATED_BODY()
 public:
 	AFPSCharacter();
+	virtual void Tick(float DeltaTime) override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
@@ -106,6 +107,8 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "MechaMania|Configurations")
 	TArray<TSubclassOf<class AFPSWeapon>> DefaultWeapons;
 
+	UPROPERTY(VisibleAnywhere)
+	class UCombatComponent* CombatComponent;
 public:
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadWrite, Replicated, Category = "MechaMania|Inventory")
 	TArray<class AFPSWeapon*> Weapons;
@@ -123,6 +126,7 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "MechaMania|FPSCharacter")
 	virtual void EquipWeapon(const int32 Index);
 
+	void SetOverlappingWeapon(AFPSWeapon* Weapon);
 protected:
 	UFUNCTION()
 	virtual void OnRep_CurrentWeapon(const class AFPSWeapon* OldWeapon);
@@ -130,6 +134,13 @@ protected:
 	UFUNCTION(Server, Reliable)
 	void Server_SetCurrentWeapon(class AFPSWeapon* Weapon);
 	virtual void Server_SetCurrentWeapon_Implementation(class AFPSWeapon* NewWeapon);
+
+private:
+	UPROPERTY(ReplicatedUsing = OnRep_OverlappingWeapon)
+	class AFPSWeapon* OverlappingWeapon;
+
+	UFUNCTION()
+	void OnRep_OverlappingWeapon(AFPSWeapon* LastWeapon);
 #pragma endregion
 
 #pragma region /** Online Subsystem */

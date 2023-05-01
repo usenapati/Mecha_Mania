@@ -18,6 +18,7 @@
 #include "Net/UnrealNetwork.h"
 #include "OnlineSubsystem.h"
 #include "OnlineSessionSettings.h"
+#include "CharacterComponents/CombatComponent.h"
 #include "Components/WidgetComponent.h"
 #include "Interfaces/OnlineSessionInterface.h"
 #include "Kismet/GameplayStatics.h"
@@ -83,7 +84,8 @@ AFPSCharacter::AFPSCharacter() //:
 	OverheadWidget = CreateDefaultSubobject<UWidgetComponent>(TEXT("OverheadWidget"));
 	OverheadWidget->SetupAttachment(RootComponent);
 	
-	
+	CombatComponent = CreateDefaultSubobject<UCombatComponent>(TEXT("CombatComponent"));
+	CombatComponent->SetIsReplicated(true);
 	/*
 	if (!IsFirstPerson)
 	{
@@ -168,6 +170,12 @@ void AFPSCharacter::BeginPlay()
 		}
 		
 	}
+}
+
+void AFPSCharacter::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+	
 }
 
 void AFPSCharacter::PostInitializeComponents()
@@ -276,6 +284,7 @@ void AFPSCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLif
 
 	DOREPLIFETIME_CONDITION(AFPSCharacter, Weapons, COND_None);
 	DOREPLIFETIME_CONDITION(AFPSCharacter, CurrentWeapon, COND_None);
+	DOREPLIFETIME_CONDITION(AFPSCharacter, OverlappingWeapon, COND_OwnerOnly);
 }
 
 void AFPSCharacter::OnRep_CurrentWeapon(const AFPSWeapon* OldWeapon)
@@ -479,11 +488,31 @@ void AFPSCharacter::EquipWeapon(const int32 Index)
 	}
 }
 
+void AFPSCharacter::SetOverlappingWeapon(AFPSWeapon* Weapon)
+{
+	if (OverlappingWeapon)
+	{
+		OverlappingWeapon->ShowPickupWidget(false);	
+	}
+	OverlappingWeapon = Weapon;
+	if (!IsLocallyControlled()) return;
+	if (!OverlappingWeapon) return;
+	OverlappingWeapon->ShowPickupWidget(true);
+}
+
 void AFPSCharacter::Server_SetCurrentWeapon_Implementation(AFPSWeapon* NewWeapon)
 {
 	const AFPSWeapon* OldWeapon = CurrentWeapon;
 	CurrentWeapon = NewWeapon;
 	OnRep_CurrentWeapon(OldWeapon);
+}
+
+void AFPSCharacter::OnRep_OverlappingWeapon(AFPSWeapon* LastWeapon)
+{
+	if (!OverlappingWeapon) return;
+	OverlappingWeapon->ShowPickupWidget(true);
+	if (!LastWeapon) return;
+	LastWeapon->ShowPickupWidget(false);
 }
 
 void AFPSCharacter::NextWeapon(const FInputActionValue& Value)

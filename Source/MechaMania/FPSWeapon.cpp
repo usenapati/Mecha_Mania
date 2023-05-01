@@ -40,6 +40,7 @@ void AFPSWeapon::BeginPlay()
 		AreaSphere->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 		AreaSphere->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
 		AreaSphere->OnComponentBeginOverlap.AddDynamic(this, &AFPSWeapon::OnSphereOverlap);
+		AreaSphere->OnComponentEndOverlap.AddDynamic(this, &AFPSWeapon::AFPSWeapon::OnSphereEndOverlap);
 	}
 
 	if (PickupWidget)
@@ -51,12 +52,33 @@ void AFPSWeapon::BeginPlay()
 	//	WeaponMesh->SetVisibility(false);
 }
 
+void AFPSWeapon::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+}
+
+void AFPSWeapon::ShowPickupWidget(bool bShowWidget)
+{
+	if (!PickupWidget) return;
+	PickupWidget->SetVisibility(bShowWidget);
+}
+
 void AFPSWeapon::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
 	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
 	AFPSCharacter* FPSCharacter = Cast<AFPSCharacter>(OtherActor);
-	if (FPSCharacter && PickupWidget)
+	if (FPSCharacter)
 	{
-		PickupWidget->SetVisibility(true);
+		FPSCharacter->SetOverlappingWeapon(this);
+	}
+}
+
+void AFPSWeapon::OnSphereEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
+	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
+{
+	AFPSCharacter* FPSCharacter = Cast<AFPSCharacter>(OtherActor);
+	if (FPSCharacter)
+	{
+		FPSCharacter->SetOverlappingWeapon(nullptr);
 	}
 }

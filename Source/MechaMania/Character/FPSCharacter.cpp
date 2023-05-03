@@ -12,13 +12,13 @@
 #include "EnhancedInput/Public/InputMappingContext.h"
 #include "EnhancedInput/Public/EnhancedInputComponent.h"
 #include "EnhancedInput/Public/InputActionValue.h"
-#include "InputConfigData.h"
-#include "FPSWeapon.h"
+#include "MechaMania/Input/InputConfigData.h"
+#include "MechaMania/Weapon/FPSWeapon.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Net/UnrealNetwork.h"
 #include "OnlineSubsystem.h"
 #include "OnlineSessionSettings.h"
-#include "CharacterComponents/CombatComponent.h"
+#include "MechaMania/CharacterComponents/CombatComponent.h"
 #include "Components/WidgetComponent.h"
 #include "Interfaces/OnlineSessionInterface.h"
 #include "Kismet/GameplayStatics.h"
@@ -86,6 +86,9 @@ AFPSCharacter::AFPSCharacter() //:
 	
 	CombatComponent = CreateDefaultSubobject<UCombatComponent>(TEXT("CombatComponent"));
 	CombatComponent->SetIsReplicated(true);
+
+	GetCharacterMovement()->NavAgentProps.bCanCrouch = true;
+	GetCharacterMovement()->NavAgentProps.bCanJump = true;
 	/*
 	if (!IsFirstPerson)
 	{
@@ -172,18 +175,22 @@ void AFPSCharacter::BeginPlay()
 	}
 }
 
-void AFPSCharacter::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
-	
-}
-
 void AFPSCharacter::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();
 
+	if (CombatComponent)
+	{
+		CombatComponent->Character = this;
+	}
 	StartingThirdPersonCameraBoomArmLength = CameraBoom->TargetArmLength;
 	StartingThirdPersonCameraBoomArmLocation = CameraBoom->GetRelativeLocation();
+}
+
+void AFPSCharacter::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+	
 }
 
 UCameraComponent* AFPSCharacter::Get1PCamera_Implementation()
@@ -275,6 +282,7 @@ void AFPSCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompon
 		PEI->BindAction(InputActions->InputChangeCamera, ETriggerEvent::Triggered, this, &AFPSCharacter::ChangeCamera);
 		PEI->BindAction(InputActions->InputJump, ETriggerEvent::Triggered, this, &AFPSCharacter::JumpInput);
 		PEI->BindAction(InputActions->InputCrouch, ETriggerEvent::Triggered, this, &AFPSCharacter::CrouchInput);
+		PEI->BindAction(InputActions->InputInteract, ETriggerEvent::Triggered, this, &AFPSCharacter::Interact);
 	}
 }
 
@@ -389,18 +397,11 @@ void AFPSCharacter::JumpInput(const FInputActionValue& Value)
 	{
 		const bool JumpValue = Value.Get<bool>();
 		IsJumping = JumpValue;
-		if (IsJumping)
+		if (IsJumping && !GetCharacterMovement()->IsFalling())
 		{
 			Jump();
+			//UE_LOG(LogTemp, Warning, TEXT("Jump Button Pressed"));
 		}
-		/*if (JumpValue)
-		{
-			IsJumping = true;
-		}
-		else
-		{
-			IsJumping = false;
-		}*/
 	}
 }
 
@@ -410,18 +411,14 @@ void AFPSCharacter::CrouchInput(const FInputActionValue& Value)
 	{
 		const bool CrouchValue = Value.Get<bool>();
 		IsCrouching = CrouchValue;
-		if (IsCrouching)
+		if (!IsCrouching)
 		{
-			Crouch();
-		}
-		/*if (CrouchValue)
-		{
-			IsCrouching = true;
+			UnCrouch();
 		}
 		else
 		{
-			IsCrouching = false;
-		}*/
+			Crouch();
+		}
 	}
 }
 
@@ -437,20 +434,37 @@ void AFPSCharacter::ChangeCamera(const FInputActionValue& Value)
 	}
 }
 
+void AFPSCharacter::Interact(const FInputActionValue& Value)
+{
+	if (Controller == nullptr) return;
+	
+	const bool InteractValue = Value.Get<bool>();
+	IsInteracting = InteractValue;
+	
+	if (!CombatComponent) return;
+	if (IsInteracting)
+	{
+		if (HasAuthority())
+		{
+			CombatComponent->EquipWeapon(OverlappingWeapon);
+		}
+		else
+		{
+			Server_EquipWeapon();
+		}
+	}	
+}
+
 void AFPSCharacter::ADS(const FInputActionValue& Value)
 {
 	if (Controller != nullptr)
 	{
 		const bool ADSValue = Value.Get<bool>();
 		IsADS = ADSValue;
-		/*if (ADSValue)
+		if (CombatComponent)
 		{
-			IsADS = true;
+			CombatComponent->SetAiming(IsADS);
 		}
-		else
-		{
-			IsADS = false;
-		}*/
 	}
 }
 
@@ -460,14 +474,6 @@ void AFPSCharacter::Shoot(const FInputActionValue& Value)
 	{
 		const bool ShootingValue = Value.Get<bool>();
 		IsShooting = ShootingValue;
-		/*if (ShootingValue)
-		{
-			IsShooting = true;
-		}
-		else
-		{
-			IsShooting = false;
-		}*/
 	}
 }
 
@@ -500,11 +506,27 @@ void AFPSCharacter::SetOverlappingWeapon(AFPSWeapon* Weapon)
 	OverlappingWeapon->ShowPickupWidget(true);
 }
 
+bool AFPSCharacter::IsWeaponEquipped()
+{
+	return (CombatComponent && CombatComponent->EquippedWeapon);
+}
+
+bool AFPSCharacter::IsAiming()
+{
+	return (CombatComponent && CombatComponent->bAiming);
+}
+
 void AFPSCharacter::Server_SetCurrentWeapon_Implementation(AFPSWeapon* NewWeapon)
 {
 	const AFPSWeapon* OldWeapon = CurrentWeapon;
 	CurrentWeapon = NewWeapon;
 	OnRep_CurrentWeapon(OldWeapon);
+}
+
+void AFPSCharacter::Server_EquipWeapon_Implementation()
+{
+	if (!CombatComponent) return;
+	CombatComponent->EquipWeapon(OverlappingWeapon);
 }
 
 void AFPSCharacter::OnRep_OverlappingWeapon(AFPSWeapon* LastWeapon)

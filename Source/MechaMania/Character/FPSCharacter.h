@@ -127,6 +127,8 @@ public:
 	virtual void EquipWeapon(const int32 Index);
 
 	void SetOverlappingWeapon(AFPSWeapon* Weapon);
+	bool IsWeaponEquipped();
+	bool IsAiming();
 protected:
 	UFUNCTION()
 	virtual void OnRep_CurrentWeapon(const class AFPSWeapon* OldWeapon);
@@ -134,6 +136,10 @@ protected:
 	UFUNCTION(Server, Reliable)
 	void Server_SetCurrentWeapon(class AFPSWeapon* Weapon);
 	virtual void Server_SetCurrentWeapon_Implementation(class AFPSWeapon* NewWeapon);
+
+	UFUNCTION(Server, Reliable)
+	void Server_EquipWeapon();
+	virtual void Server_EquipWeapon_Implementation();
 
 private:
 	UPROPERTY(ReplicatedUsing = OnRep_OverlappingWeapon)
@@ -181,6 +187,9 @@ public:
 	bool IsJumping;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "MechaMania|Animation")
 	bool IsCrouching;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "MechaMania|Animation")
+	bool IsInteracting;
+	
 
 protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "MechaMania|Enhanced Input")
@@ -188,13 +197,14 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "MechaMania|Enhanced Input")
 	class UInputConfigData* InputActions;
-	// Movement Inputs
+	// Movement and Action Inputs
 	void Move(const FInputActionValue& Value); // Handle move input
 	void Look(const FInputActionValue& Value); // Handle look input
 	void JumpInput(const FInputActionValue& Value);
 	void CrouchInput(const FInputActionValue& Value);
 	void ChangeCamera(const FInputActionValue& Value); // Switch between third person and first person camera
-
+	void Interact(const FInputActionValue& Value);
+	
 	// Weapon Inputs
 	void ADS(const FInputActionValue& Value);
 	void Shoot(const FInputActionValue& Value);

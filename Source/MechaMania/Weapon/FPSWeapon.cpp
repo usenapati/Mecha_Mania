@@ -2,9 +2,10 @@
 
 
 #include "FPSWeapon.h"
-#include "FPSCharacter.h"
+#include "MechaMania/Character/FPSCharacter.h"
 #include "Components/SphereComponent.h"
 #include "Components/WidgetComponent.h"
+#include "Net/UnrealNetwork.h"
 
 // Sets default values
 AFPSWeapon::AFPSWeapon()
@@ -57,6 +58,13 @@ void AFPSWeapon::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 }
 
+void AFPSWeapon::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(AFPSWeapon, WeaponState);
+}
+
 void AFPSWeapon::ShowPickupWidget(bool bShowWidget)
 {
 	if (!PickupWidget) return;
@@ -80,5 +88,30 @@ void AFPSWeapon::OnSphereEndOverlap(UPrimitiveComponent* OverlappedComponent, AA
 	if (FPSCharacter)
 	{
 		FPSCharacter->SetOverlappingWeapon(nullptr);
+	}
+}
+
+void AFPSWeapon::SetWeaponState(EWeaponState State)
+{
+	WeaponState = State;
+	switch (WeaponState)
+	{
+	case EWeaponState::EWS_Equipped:
+		ShowPickupWidget(false);
+		AreaSphere->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		break;
+	}
+	
+}
+
+void AFPSWeapon::OnRep_WeaponState()
+{
+	switch (WeaponState)
+	{
+	case EWeaponState::EWS_Equipped:
+		ShowPickupWidget(false);
+		break;
+		
+		
 	}
 }

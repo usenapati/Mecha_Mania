@@ -26,6 +26,9 @@ public:
 	UInputAction* InputChangeCamera;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	UInputAction* InputInteract;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	UInputAction* InputJump;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)

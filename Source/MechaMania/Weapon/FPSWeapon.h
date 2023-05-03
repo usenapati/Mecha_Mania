@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-#include "FPSCharacter.h"
+#include "MechaMania/Character/FPSCharacter.h"
 #include "FPSWeapon.generated.h"
 
 UENUM(BlueprintType)
@@ -40,6 +40,7 @@ class MECHAMANIA_API AFPSWeapon : public AActor
 public:
 	AFPSWeapon();
 	virtual void Tick(float DeltaTime) override;
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	void ShowPickupWidget(bool bShowWidget);
 
 protected:
@@ -77,9 +78,16 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "MechaMania|Configurations")
 	FTransform PlacementTransform;
 private:
-	UPROPERTY(VisibleAnywhere, Category = "MechaMania|Weapon State")
+	UPROPERTY(ReplicatedUsing = OnRep_WeaponState, VisibleAnywhere, Category = "MechaMania|Weapon State")
 	EWeaponState WeaponState;
+
+	UFUNCTION()
+	void OnRep_WeaponState();
 
 	UPROPERTY(VisibleAnywhere, Category = "MechaMania|Weapon Properties")
 	class UWidgetComponent* PickupWidget;
+
+public:
+	void SetWeaponState(EWeaponState State);
+	FORCEINLINE USphereComponent* GetAreaSphere() const { return AreaSphere; }
 };

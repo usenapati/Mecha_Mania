@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "FPSWeapon.h"
+#include "MechaMania/Weapon/FPSWeapon.h"
 #include "Animation/AnimInstance.h"
 #include "FPSAnimInstance.generated.h"
 
@@ -59,4 +59,23 @@ private:
 
 	UPROPERTY(BlueprintReadOnly, Category = "MechaMania|Character", meta = (AllowPrivateAccess = "true"))
 	bool bIsAccelerating;
+
+	UPROPERTY(BlueprintReadOnly, Category = "MechaMania|Character", meta = (AllowPrivateAccess = "true"))
+	bool bWeaponEquipped;
+
+	UPROPERTY(BlueprintReadOnly, Category = "MechaMania|Character", meta = (AllowPrivateAccess = "true"))
+	bool bIsCrouched;
+
+	UPROPERTY(BlueprintReadOnly, Category = "MechaMania|Character", meta = (AllowPrivateAccess = "true"))
+	bool bIsAiming;
+
+	UPROPERTY(BlueprintReadOnly, Category = "MechaMania|Character", meta = (AllowPrivateAccess = "true"))
+	float YawOffset;
+
+	UPROPERTY(BlueprintReadOnly, Category = "MechaMania|Character", meta = (AllowPrivateAccess = "true"))
+	float Lean;
+
+	FRotator CharacterRotationLastFrame;
+	FRotator CharacterRotation;
+	FRotator DeltaRotation;
 };

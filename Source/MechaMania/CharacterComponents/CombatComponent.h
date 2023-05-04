@@ -8,6 +8,8 @@
 #include "MechaMania/Weapon/FPSWeapon.h"
 #include "CombatComponent.generated.h"
 
+#define TRACE_LENGTH 80000.f
+
 class AFPSWeapon;
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
@@ -34,6 +36,16 @@ protected:
 	UFUNCTION()
 	void OnRep_EquippedWeapon();
 
+	void SetShooting(bool bIsShooting);
+
+	UFUNCTION(Server, Reliable)
+	void Server_Shooting();
+
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_Shooting();
+
+	void TraceUnderCrossHairs(FHitResult& TraceHitResult);
+
 private:
 	class AFPSCharacter* Character;
 
@@ -42,6 +54,9 @@ private:
 
 	UPROPERTY(Replicated)
 	bool bAiming;
+
+	UPROPERTY(Replicated)
+	bool bShooting;
 public:	
 	
 

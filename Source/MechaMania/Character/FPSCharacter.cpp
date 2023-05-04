@@ -19,6 +19,7 @@
 #include "OnlineSubsystem.h"
 #include "OnlineSessionSettings.h"
 #include "MechaMania/CharacterComponents/CombatComponent.h"
+#include "MechaMania/Anim/FPSAnimInstance.h"
 #include "Components/WidgetComponent.h"
 #include "Interfaces/OnlineSessionInterface.h"
 #include "Kismet/GameplayStatics.h"
@@ -474,6 +475,10 @@ void AFPSCharacter::Shoot(const FInputActionValue& Value)
 	{
 		const bool ShootingValue = Value.Get<bool>();
 		IsShooting = ShootingValue;
+		if (CombatComponent)
+		{
+			CombatComponent->SetShooting(IsShooting);
+		}
 	}
 }
 
@@ -491,6 +496,17 @@ void AFPSCharacter::EquipWeapon(const int32 Index)
 	else if (!HasAuthority())
 	{
 		Server_SetCurrentWeapon(Weapons[Index]);
+	}
+}
+
+void AFPSCharacter::PlayFireWeaponMontage()
+{
+	if (CombatComponent == nullptr || CombatComponent->EquippedWeapon == nullptr) return;
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	if (AnimInstance && FireRifleWeaponMontage)
+	{
+		AnimInstance->Montage_Play(FireRifleWeaponMontage);
+		// No Section Name
 	}
 }
 

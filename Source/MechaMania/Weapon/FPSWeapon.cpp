@@ -6,6 +6,8 @@
 #include "Components/SphereComponent.h"
 #include "Components/WidgetComponent.h"
 #include "Net/UnrealNetwork.h"
+#include "Animation/AnimationAsset.h"
+#include "Components/SkeletalMeshComponent.h"
 
 // Sets default values
 AFPSWeapon::AFPSWeapon()
@@ -71,8 +73,16 @@ void AFPSWeapon::ShowPickupWidget(bool bShowWidget)
 	PickupWidget->SetVisibility(bShowWidget);
 }
 
+void AFPSWeapon::Fire()
+{
+	if (FireAnimation)
+	{
+		WeaponMesh->PlayAnimation(FireAnimation, false);
+	}
+}
+
 void AFPSWeapon::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
-	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+                                 UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
 	AFPSCharacter* FPSCharacter = Cast<AFPSCharacter>(OtherActor);
 	if (FPSCharacter)

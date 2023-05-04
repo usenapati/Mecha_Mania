@@ -126,9 +126,8 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "MechaMania|FPSCharacter")
 	virtual void EquipWeapon(const int32 Index);
 
-	void SetOverlappingWeapon(AFPSWeapon* Weapon);
-	bool IsWeaponEquipped();
-	bool IsAiming();
+	void PlayFireWeaponMontage();
+
 protected:
 	UFUNCTION()
 	virtual void OnRep_CurrentWeapon(const class AFPSWeapon* OldWeapon);
@@ -140,6 +139,24 @@ protected:
 	UFUNCTION(Server, Reliable)
 	void Server_EquipWeapon();
 	virtual void Server_EquipWeapon_Implementation();
+
+	float AO_Yaw;
+	float InterpAO_Yaw;
+	float AO_Pitch;
+	FRotator StartingAimRotation;
+
+	// Turning in place
+
+	UPROPERTY(EditAnywhere, Category = "MechaMania|Anim")
+	class UAnimMontage* FireRifleWeaponMontage;
+
+public:
+	void SetOverlappingWeapon(AFPSWeapon* Weapon);
+	bool IsWeaponEquipped();
+	bool IsAiming();
+	FORCEINLINE float GetAO_Yaw() const { return AO_Yaw; }
+	FORCEINLINE float GetAO_Pitch() const { return AO_Pitch; }
+	
 
 private:
 	UPROPERTY(ReplicatedUsing = OnRep_OverlappingWeapon)

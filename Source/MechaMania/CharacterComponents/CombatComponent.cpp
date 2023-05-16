@@ -24,6 +24,7 @@ void UCombatComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 
 	DOREPLIFETIME(UCombatComponent, EquippedWeapon);
 	DOREPLIFETIME(UCombatComponent, bAiming);
+	DOREPLIFETIME(UCombatComponent, bShooting);
 }
 
 void UCombatComponent::BeginPlay()
@@ -36,8 +37,6 @@ void UCombatComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActo
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-	FHitResult HitResult;
-	TraceUnderCrossHairs(HitResult);
 }
 
 void UCombatComponent::SetAiming(bool bIsAiming)
@@ -60,7 +59,9 @@ void UCombatComponent::SetShooting(bool bIsShooting)
 	bShooting = bIsShooting;
 	if (bShooting)
 	{
-		Server_Shooting();
+		FHitResult HitResult;
+		TraceUnderCrossHairs(HitResult);
+		Server_Shooting(HitResult.ImpactPoint);
 	}
 }
 
@@ -91,12 +92,14 @@ void UCombatComponent::TraceUnderCrossHairs(FHitResult& TraceHitResult)
 			End,
 			ECC_Visibility
 		);
+		/*
 		if (!TraceHitResult.bBlockingHit)
 		{
 			TraceHitResult.ImpactPoint = End;
 		}
 		else
 		{
+			
 			DrawDebugSphere(
 				GetWorld(),
 				TraceHitResult.ImpactPoint,
@@ -104,23 +107,25 @@ void UCombatComponent::TraceUnderCrossHairs(FHitResult& TraceHitResult)
 				12.f,
 				FColor::Red
 			);
+			
 		}
+		*/
 	}
 }
 
-void UCombatComponent::Multicast_Shooting_Implementation()
+void UCombatComponent::Multicast_Shooting_Implementation(const FVector_NetQuantize& TraceHitTarget)
 {
 	if (EquippedWeapon == nullptr) return;
-	if (Character && bShooting)
+	if (Character)
 	{
 		Character->PlayFireWeaponMontage();
-		EquippedWeapon->Fire();
+		EquippedWeapon->Fire(TraceHitTarget);
 	}
 }
 
-void UCombatComponent::Server_Shooting_Implementation()
+void UCombatComponent::Server_Shooting_Implementation(const FVector_NetQuantize& TraceHitTarget)
 {
-	Multicast_Shooting();
+	Multicast_Shooting(TraceHitTarget);
 }
 
 void UCombatComponent::Server_SetAiming_Implementation(bool bIsAiming)

@@ -506,6 +506,7 @@ void AFPSCharacter::PlayFireWeaponMontage()
 	if (AnimInstance && FireRifleWeaponMontage)
 	{
 		AnimInstance->Montage_Play(FireRifleWeaponMontage);
+		//UE_LOG(LogTemp, Warning, TEXT("Fire Montage"));
 		// No Section Name
 	}
 }

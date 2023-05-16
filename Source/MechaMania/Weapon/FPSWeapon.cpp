@@ -2,12 +2,15 @@
 
 
 #include "FPSWeapon.h"
+
+#include "FPSCasing.h"
 #include "MechaMania/Character/FPSCharacter.h"
 #include "Components/SphereComponent.h"
 #include "Components/WidgetComponent.h"
 #include "Net/UnrealNetwork.h"
 #include "Animation/AnimationAsset.h"
 #include "Components/SkeletalMeshComponent.h"
+#include "Engine/SkeletalMeshSocket.h"
 
 // Sets default values
 AFPSWeapon::AFPSWeapon()
@@ -15,12 +18,12 @@ AFPSWeapon::AFPSWeapon()
 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = false;
 
-	SetReplicates(true);
+	bReplicates = true;
 
 	WeaponMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("WeaponMesh"));
 	WeaponMesh->SetupAttachment(RootComponent);
 	SetRootComponent(WeaponMesh);
-	
+
 	WeaponMesh->SetCollisionResponseToAllChannels(ECR_Block);
 	WeaponMesh->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
 	WeaponMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
@@ -37,7 +40,7 @@ AFPSWeapon::AFPSWeapon()
 void AFPSWeapon::BeginPlay()
 {
 	Super::BeginPlay();
-	
+
 	if (HasAuthority())
 	{
 		AreaSphere->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
@@ -73,16 +76,36 @@ void AFPSWeapon::ShowPickupWidget(bool bShowWidget)
 	PickupWidget->SetVisibility(bShowWidget);
 }
 
-void AFPSWeapon::Fire()
+void AFPSWeapon::Fire(const FVector& HitTarget)
 {
 	if (FireAnimation)
 	{
 		WeaponMesh->PlayAnimation(FireAnimation, false);
 	}
+	if (CasingClass)
+	{
+		const USkeletalMeshSocket* AmmoEjectSocket = WeaponMesh->GetSocketByName(FName("AmmoEject"));
+		if (AmmoEjectSocket)
+		{
+			FTransform SocketTransform = AmmoEjectSocket->GetSocketTransform(WeaponMesh);
+			FActorSpawnParameters SpawnParams;
+			UWorld* World = GetWorld();
+			if (World)
+			{
+				World->SpawnActor<AFPSCasing>(
+					CasingClass,
+					SocketTransform.GetLocation(),
+					SocketTransform.GetRotation().Rotator(),
+					SpawnParams
+				);
+			}
+		}
+	}
 }
 
 void AFPSWeapon::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
-                                 UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+                                 UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep,
+                                 const FHitResult& SweepResult)
 {
 	AFPSCharacter* FPSCharacter = Cast<AFPSCharacter>(OtherActor);
 	if (FPSCharacter)
@@ -92,7 +115,7 @@ void AFPSWeapon::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActo
 }
 
 void AFPSWeapon::OnSphereEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
-	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
+                                    UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
 {
 	AFPSCharacter* FPSCharacter = Cast<AFPSCharacter>(OtherActor);
 	if (FPSCharacter)
@@ -111,7 +134,6 @@ void AFPSWeapon::SetWeaponState(EWeaponState State)
 		AreaSphere->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		break;
 	}
-	
 }
 
 void AFPSWeapon::OnRep_WeaponState()
@@ -121,7 +143,5 @@ void AFPSWeapon::OnRep_WeaponState()
 	case EWeaponState::EWS_Equipped:
 		ShowPickupWidget(false);
 		break;
-		
-		
 	}
 }

@@ -43,7 +43,7 @@ public:
 	virtual void Tick(float DeltaTime) override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	void ShowPickupWidget(bool bShowWidget);
-	void Fire();
+	virtual void Fire(const FVector& HitTarget);
 
 protected:
 	virtual void BeginPlay() override;
@@ -89,10 +89,14 @@ private:
 	UPROPERTY(VisibleAnywhere, Category = "MechaMania|Weapon Properties")
 	class UWidgetComponent* PickupWidget;
 
-	UPROPERTY(EditAnywhere, Category = "MechaMania|Weapon Properties")
+	UPROPERTY(EditAnywhere, Category = "MechaMania|Weapon Animations")
 	class UAnimationAsset* FireAnimation;
+
+	UPROPERTY(EditAnywhere, Category = "MechaMania|Casing Properties")
+	TSubclassOf<class AFPSCasing> CasingClass;
 
 public:
 	void SetWeaponState(EWeaponState State);
 	FORCEINLINE USphereComponent* GetAreaSphere() const { return AreaSphere; }
+	FORCEINLINE USkeletalMeshComponent* GetWeaponMesh() const { return WeaponMesh; }
 };

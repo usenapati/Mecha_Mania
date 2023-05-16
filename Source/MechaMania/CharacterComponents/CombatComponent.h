@@ -39,10 +39,10 @@ protected:
 	void SetShooting(bool bIsShooting);
 
 	UFUNCTION(Server, Reliable)
-	void Server_Shooting();
+	void Server_Shooting(const FVector_NetQuantize& TraceHitTarget);
 
 	UFUNCTION(NetMulticast, Reliable)
-	void Multicast_Shooting();
+	void Multicast_Shooting(const FVector_NetQuantize& TraceHitTarget);
 
 	void TraceUnderCrossHairs(FHitResult& TraceHitResult);
 
@@ -55,8 +55,15 @@ private:
 	UPROPERTY(Replicated)
 	bool bAiming;
 
+	UPROPERTY(EditAnywhere)
+	float BaseWalkSpeed;
+
+	UPROPERTY(EditAnywhere)
+	float AimWalkSpeed;
+
 	UPROPERTY(Replicated)
 	bool bShooting;
+
 public:	
 	
 

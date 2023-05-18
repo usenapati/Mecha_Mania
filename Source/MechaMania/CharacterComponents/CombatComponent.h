@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
 #include "MechaMania/Character/FPSCharacter.h"
+#include "MechaMania/HUD/FPSHUD.h"
 #include "MechaMania/Weapon/FPSWeapon.h"
 #include "CombatComponent.generated.h"
 
@@ -46,8 +47,13 @@ protected:
 
 	void TraceUnderCrossHairs(FHitResult& TraceHitResult);
 
+	void SetHUDCrosshairs(float DeltaTime);
+
 private:
 	class AFPSCharacter* Character;
+	class AFPSPlayerController* PlayerController;
+	class AFPSHUD* HUD;
+	FHUDPackage HUDPackage;
 
 	UPROPERTY(ReplicatedUsing = OnRep_EquippedWeapon)
 	AFPSWeapon* EquippedWeapon;
@@ -63,6 +69,12 @@ private:
 
 	UPROPERTY(Replicated)
 	bool bShooting;
+
+	/**
+	 * HUD and Crosshairs
+	 */
+	float CrosshariVelocityFactor;
+	float CrosshariInAirFactor;
 
 public:	
 	

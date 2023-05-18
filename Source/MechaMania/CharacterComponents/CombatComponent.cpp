@@ -8,6 +8,8 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "MechaMania/Character/FPSCharacter.h"
 #include "MechaMania/Weapon/FPSWeapon.h"
+#include "MechaMania//PlayerController/FPSPlayerController.h"
+#include "MechaMania/HUD/FPSHUD.h"
 #include "Net/UnrealNetwork.h"
 #include "Kismet/GameplayStatics.h"
 #include "DrawDebugHelpers.h"
@@ -15,6 +17,9 @@
 UCombatComponent::UCombatComponent()
 {
 	PrimaryComponentTick.bCanEverTick = true;
+
+	BaseWalkSpeed = 600.f;
+	AimWalkSpeed = 450.f;
 
 }
 
@@ -30,6 +35,11 @@ void UCombatComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 void UCombatComponent::BeginPlay()
 {
 	Super::BeginPlay();
+
+	if (Character)
+	{
+		Character->GetCharacterMovement()->MaxWalkSpeed = BaseWalkSpeed;
+	}
 		
 }
 
@@ -37,12 +47,43 @@ void UCombatComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActo
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
+	SetHUDCrosshairs(DeltaTime);
+
 }
 
 void UCombatComponent::SetAiming(bool bIsAiming)
 {
 	bAiming = bIsAiming;
 	Server_SetAiming(bIsAiming);
+	if (Character)
+	{
+		Character->GetCharacterMovement()->MaxWalkSpeed = bIsAiming ? AimWalkSpeed : BaseWalkSpeed;
+	}
+}
+
+void UCombatComponent::Server_SetAiming_Implementation(bool bIsAiming)
+{
+	bAiming = bIsAiming;
+	if (Character)
+	{
+		Character->GetCharacterMovement()->MaxWalkSpeed = bIsAiming ? AimWalkSpeed : BaseWalkSpeed;
+	}
+}
+
+void UCombatComponent::EquipWeapon(AFPSWeapon* WeaponToEquip)
+{
+	if (Character == nullptr || WeaponToEquip == nullptr) return;
+	EquippedWeapon = WeaponToEquip;
+	EquippedWeapon->SetWeaponState(EWeaponState::EWS_Equipped);
+
+	const FTransform PlacementTransform = EquippedWeapon->PlacementTransform * Character->GetMesh()->GetSocketTransform(
+				FName("hand_r"));
+	EquippedWeapon->SetActorTransform(PlacementTransform, false, nullptr, ETeleportType::TeleportPhysics);
+	EquippedWeapon->AttachToComponent(Character->GetMesh(), FAttachmentTransformRules::KeepWorldTransform, FName("hand_r"));
+
+	EquippedWeapon->WeaponMesh->SetVisibility(true);
+	EquippedWeapon->SetOwner(Character);
+	
 }
 
 void UCombatComponent::OnRep_EquippedWeapon()
@@ -64,6 +105,22 @@ void UCombatComponent::SetShooting(bool bIsShooting)
 		Server_Shooting(HitResult.ImpactPoint);
 	}
 }
+
+void UCombatComponent::Multicast_Shooting_Implementation(const FVector_NetQuantize& TraceHitTarget)
+{
+	if (EquippedWeapon == nullptr) return;
+	if (Character)
+	{
+		Character->PlayFireWeaponMontage();
+		EquippedWeapon->Fire(TraceHitTarget);
+	}
+}
+
+void UCombatComponent::Server_Shooting_Implementation(const FVector_NetQuantize& TraceHitTarget)
+{
+	Multicast_Shooting(TraceHitTarget);
+}
+
 
 void UCombatComponent::TraceUnderCrossHairs(FHitResult& TraceHitResult)
 {
@@ -113,39 +170,52 @@ void UCombatComponent::TraceUnderCrossHairs(FHitResult& TraceHitResult)
 	}
 }
 
-void UCombatComponent::Multicast_Shooting_Implementation(const FVector_NetQuantize& TraceHitTarget)
+void UCombatComponent::SetHUDCrosshairs(float DeltaTime)
 {
-	if (EquippedWeapon == nullptr) return;
-	if (Character)
+	if (Character == nullptr || Character->Controller == nullptr) return;
+	PlayerController = PlayerController == nullptr ? Cast<AFPSPlayerController>(Character->Controller) : PlayerController;
+
+	if (!PlayerController) return;
+	HUD = HUD == nullptr ? Cast<AFPSHUD>(PlayerController->GetHUD()) : HUD;
+
+	if (!HUD) return;
+	if (EquippedWeapon)
 	{
-		Character->PlayFireWeaponMontage();
-		EquippedWeapon->Fire(TraceHitTarget);
+		HUDPackage.CrosshairCenter = EquippedWeapon->CrosshairsCenter;
+		HUDPackage.CrosshairLeft = EquippedWeapon->CrosshairsLeft;
+		HUDPackage.CrosshairRight = EquippedWeapon->CrosshairsRight;
+		HUDPackage.CrosshairTop = EquippedWeapon->CrosshairsTop;
+		HUDPackage.CrosshairBottom = EquippedWeapon->CrosshairsBottom;
 	}
-}
+	else
+	{
+		HUDPackage.CrosshairCenter = nullptr;
+		HUDPackage.CrosshairLeft = nullptr;
+		HUDPackage.CrosshairRight = nullptr;
+		HUDPackage.CrosshairTop = nullptr;
+		HUDPackage.CrosshairBottom = nullptr;
+	}
 
-void UCombatComponent::Server_Shooting_Implementation(const FVector_NetQuantize& TraceHitTarget)
-{
-	Multicast_Shooting(TraceHitTarget);
-}
+	// Calculate Crosshair Spread based on Player's Velocity
+	// [0, 600]  -> [0, 1]
+	FVector2D WalkSpeedRange(0.f, Character->GetCharacterMovement()->MaxWalkSpeed);
+	FVector2D VelocityMultiplierRange(0.f, 1.f);
+	FVector Velocity = Character->GetVelocity();
+	Velocity.Z = 0.f;
+	CrosshariVelocityFactor = FMath::GetMappedRangeValueClamped(WalkSpeedRange, VelocityMultiplierRange, Velocity.Size());
 
-void UCombatComponent::Server_SetAiming_Implementation(bool bIsAiming)
-{
-	bAiming = bIsAiming;
-}
-
-void UCombatComponent::EquipWeapon(AFPSWeapon* WeaponToEquip)
-{
-	if (Character == nullptr || WeaponToEquip == nullptr) return;
-	EquippedWeapon = WeaponToEquip;
-	EquippedWeapon->SetWeaponState(EWeaponState::EWS_Equipped);
-
-	const FTransform PlacementTransform = EquippedWeapon->PlacementTransform * Character->GetMesh()->GetSocketTransform(
-				FName("hand_r"));
-	EquippedWeapon->SetActorTransform(PlacementTransform, false, nullptr, ETeleportType::TeleportPhysics);
-	EquippedWeapon->AttachToComponent(Character->GetMesh(), FAttachmentTransformRules::KeepWorldTransform, FName("hand_r"));
-
-	EquippedWeapon->WeaponMesh->SetVisibility(true);
-	EquippedWeapon->SetOwner(Character);
+	if (Character->GetCharacterMovement()->IsFalling())
+	{
+		CrosshariInAirFactor = FMath::FInterpTo(CrosshariInAirFactor, 2.25f, DeltaTime, 2.25f);
+	}
+	else
+	{
+		CrosshariInAirFactor = FMath::FInterpTo(CrosshariInAirFactor, 0.f, DeltaTime, 30.f);
+	}
 	
+	HUDPackage.CrosshairSpread = CrosshariVelocityFactor + CrosshariInAirFactor;
+	
+	HUD->SetHUDPackage(HUDPackage);
 }
+
 

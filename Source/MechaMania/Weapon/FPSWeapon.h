@@ -96,6 +96,21 @@ private:
 	TSubclassOf<class AFPSCasing> CasingClass;
 
 public:
+	/**
+	 * Textures for the weapon crosshairs
+	 */
+	UPROPERTY(EditAnywhere, Category = "MechaMania|Crosshair Properties")
+	class UTexture2D* CrosshairsCenter;
+
+	UPROPERTY(EditAnywhere, Category = "MechaMania|Crosshair Properties")
+	UTexture2D* CrosshairsLeft;
+	UPROPERTY(EditAnywhere, Category = "MechaMania|Crosshair Properties")
+	UTexture2D* CrosshairsRight;
+	UPROPERTY(EditAnywhere, Category = "MechaMania|Crosshair Properties")
+	UTexture2D* CrosshairsTop;
+	UPROPERTY(EditAnywhere, Category = "MechaMania|Crosshair Properties")
+	UTexture2D* CrosshairsBottom;
+public:
 	void SetWeaponState(EWeaponState State);
 	FORCEINLINE USphereComponent* GetAreaSphere() const { return AreaSphere; }
 	FORCEINLINE USkeletalMeshComponent* GetWeaponMesh() const { return WeaponMesh; }

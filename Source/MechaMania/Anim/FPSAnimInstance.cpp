@@ -7,6 +7,7 @@
 #include "Camera/CameraComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/KismetMathLibrary.h"
+#include "MechaMania/Weapon/FPSWeapon.h"
 
 UFPSAnimInstance::UFPSAnimInstance()
 {
@@ -57,6 +58,7 @@ void UFPSAnimInstance::SetVars(const float DeltaTime)
 	bIsInAir = Character->GetCharacterMovement()->IsFalling();
 	bIsAccelerating = Character->GetCharacterMovement()->GetCurrentAcceleration().Size() > 0 ? true : false;
 	bWeaponEquipped = Character->IsWeaponEquipped();
+	EquippedWeapon = Character->GetEquippedWeapon();
 	bIsCrouched = Character->bIsCrouched;
 	bIsAiming = Character->IsAiming();
 
@@ -74,6 +76,28 @@ void UFPSAnimInstance::SetVars(const float DeltaTime)
 	const float Target = Delta.Yaw / DeltaTime;
 	const float Interp = FMath::FInterpTo(Lean, Target, DeltaTime, 6.f);
 	Lean = FMath::Clamp(Interp, -90.f, 90.f);
+
+	// Aim Offset
+	if (Character->IsInFirstPersonPerspective())
+	{
+		AO_Yaw = YawOffset;
+	}
+	else
+	{
+		AO_Yaw = Character->GetAO_Yaw();
+	}
+	AO_Pitch = Character->GetAO_Pitch();
+
+	// Hand IK
+	if (bWeaponEquipped && EquippedWeapon && EquippedWeapon->GetWeaponMesh() && Character->GetMesh())
+	{
+		LeftHandTransform = EquippedWeapon->GetWeaponMesh()->GetSocketTransform(FName("LeftHandSocket"), RTS_World);
+		FVector OutPosition;
+		FRotator OutRotation;
+		Character->GetMesh()->TransformToBoneSpace(FName("hand_r"), LeftHandTransform.GetLocation(), FRotator::ZeroRotator, OutPosition, OutRotation);
+		LeftHandTransform.SetLocation(OutPosition);
+		LeftHandTransform.SetRotation(FQuat(OutRotation));
+	}
 	
 	// Camera Vars
 	FVector CameraLocation;

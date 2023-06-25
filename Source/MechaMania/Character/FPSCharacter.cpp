@@ -23,13 +23,9 @@
 #include "Components/WidgetComponent.h"
 #include "Interfaces/OnlineSessionInterface.h"
 #include "Kismet/GameplayStatics.h"
+#include "Kismet/KismetMathLibrary.h"
 
-AFPSCharacter::AFPSCharacter() //:
-	//CreateSessionCompleteDelegate(
-	//	FOnCreateSessionCompleteDelegate::CreateUObject(this, &ThisClass::OnCreateSessionComplete)),
-	//FindSessionsCompleteDelegate(
-	//	FOnFindSessionsCompleteDelegate::CreateUObject(this, &ThisClass::OnFindSessionsComplete)),
-	//JoinSessionCompleteDelegate(FOnJoinSessionCompleteDelegate::CreateUObject(this, &ThisClass::OnJoinSessionComplete))
+AFPSCharacter::AFPSCharacter()
 {
 	/**
 	// Set size for collision capsule
@@ -61,14 +57,14 @@ AFPSCharacter::AFPSCharacter() //:
 	Default1PFOV = 90.0f;
 	Default3PFOV = 90.0f;
 	BaseTurnRate = 1.f;
-	
+
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
 	CameraBoom->SetupAttachment(GetMesh());
 	//Setting default properties of the SpringArmComp
 	CameraBoom->bUsePawnControlRotation = true;
 	CameraBoom->bEnableCameraLag = true;
 	CameraBoom->TargetArmLength = 300.0f;
-	
+
 	ThirdPersonCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("ThirdPersonCamera"));
 	ThirdPersonCamera->AttachToComponent(CameraBoom, FAttachmentTransformRules::KeepRelativeTransform,
 	                                     USpringArmComponent::SocketName);
@@ -84,7 +80,7 @@ AFPSCharacter::AFPSCharacter() //:
 
 	OverheadWidget = CreateDefaultSubobject<UWidgetComponent>(TEXT("OverheadWidget"));
 	OverheadWidget->SetupAttachment(RootComponent);
-	
+
 	CombatComponent = CreateDefaultSubobject<UCombatComponent>(TEXT("CombatComponent"));
 	CombatComponent->SetIsReplicated(true);
 
@@ -93,45 +89,6 @@ AFPSCharacter::AFPSCharacter() //:
 
 	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_Camera, ECR_Ignore);
 	GetMesh()->SetCollisionResponseToChannel(ECC_Camera, ECR_Ignore);
-	/*
-	if (!IsFirstPerson)
-	{
-		// Adjust Camera to Third Person View
-		ThirdPersonCamera->SetActive(true);
-		FirstPersonCamera->SetActive(false);
-		//PlayerController->SetViewTargetWithBlend(this, 1.f);
-		CurrentCamera = ThirdPersonCamera;
-	}
-	else
-	{
-			
-		// Adjust Camera to First Person View
-		ThirdPersonCamera->SetActive(false);
-		FirstPersonCamera->SetActive(true);
-		//PlayerController->SetViewTargetWithBlend(this, 1.f);
-		CurrentCamera = FirstPersonCamera;
-	}
-	*/
-	
-	
-	// Online Subsystem
-	/*
-	IOnlineSubsystem* OnlineSubsystem = IOnlineSubsystem::Get();
-	if (OnlineSubsystem)
-	{
-		OnlineSessionInterface = OnlineSubsystem->GetSessionInterface();
-				if (GEngine)
-				{
-					GEngine->AddOnScreenDebugMessage(
-						-1,
-						15.f,
-						FColor::Blue,
-						FString::Printf(TEXT("Found subsystem %s"), *OnlineSubsystem->GetSubsystemName().ToString())
-					);
-				}
-
-	}
-*/
 }
 
 bool AFPSCharacter::IsInFirstPersonPerspective() const
@@ -175,7 +132,6 @@ void AFPSCharacter::BeginPlay()
 			ThirdPersonCamera->Activate();
 			PC->SetViewTarget(this);
 		}
-		
 	}
 }
 
@@ -194,7 +150,8 @@ void AFPSCharacter::PostInitializeComponents()
 void AFPSCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	
+
+	AimOffset(DeltaTime);
 }
 
 UCameraComponent* AFPSCharacter::Get1PCamera_Implementation()
@@ -218,24 +175,24 @@ void AFPSCharacter::SetPerspective(bool Is1PPerspective)
 	if (!IsValid(FirstPersonCamera))
 	{
 		GEngine->AddOnScreenDebugMessage(
-				-1,
-				15.f,
-				FColor::Red,
-				FString::Printf(TEXT("FP Cam is not valid"))
-			);
+			-1,
+			15.f,
+			FColor::Red,
+			FString::Printf(TEXT("FP Cam is not valid"))
+		);
 		return;
 	}
 	if (!IsValid(ThirdPersonCamera))
 	{
 		GEngine->AddOnScreenDebugMessage(
-				-1,
-				15.f,
-				FColor::Red,
-				FString::Printf(TEXT("TP Cam is not valid"))
-			);
+			-1,
+			15.f,
+			FColor::Red,
+			FString::Printf(TEXT("TP Cam is not valid"))
+		);
 		return;
 	}
-	
+
 	APlayerController* PC = Cast<APlayerController>(GetController());
 	if (PC && PC->IsLocalController())
 	{
@@ -391,7 +348,6 @@ void AFPSCharacter::Look(const FInputActionValue& Value)
 				AddControllerPitchInput(LookValue.Y * BaseTurnRate);
 			}
 		}
-		
 	}
 }
 
@@ -441,10 +397,10 @@ void AFPSCharacter::ChangeCamera(const FInputActionValue& Value)
 void AFPSCharacter::Interact(const FInputActionValue& Value)
 {
 	if (Controller == nullptr) return;
-	
+
 	const bool InteractValue = Value.Get<bool>();
 	IsInteracting = InteractValue;
-	
+
 	if (!CombatComponent) return;
 	if (IsInteracting)
 	{
@@ -456,7 +412,7 @@ void AFPSCharacter::Interact(const FInputActionValue& Value)
 		{
 			Server_EquipWeapon();
 		}
-	}	
+	}
 }
 
 void AFPSCharacter::ADS(const FInputActionValue& Value)
@@ -518,7 +474,7 @@ void AFPSCharacter::SetOverlappingWeapon(AFPSWeapon* Weapon)
 {
 	if (OverlappingWeapon)
 	{
-		OverlappingWeapon->ShowPickupWidget(false);	
+		OverlappingWeapon->ShowPickupWidget(false);
 	}
 	OverlappingWeapon = Weapon;
 	if (!IsLocallyControlled()) return;
@@ -573,6 +529,52 @@ void AFPSCharacter::LastWeapon(const FInputActionValue& Value)
 		const int32 Index = Weapons.IsValidIndex(CurrentIndex - 1) ? CurrentIndex - 1 : Weapons.Num() - 1;
 		EquipWeapon(Index);
 	}
+}
+
+void AFPSCharacter::AimOffset(float DeltaTime)
+{
+	if (CombatComponent && CombatComponent->EquippedWeapon == nullptr) return; // May want to account for Unarmed State
+	FVector Velocity = GetVelocity();
+	Velocity.Z = 0.f;
+	float Speed = Velocity.Size();
+	bool bIsInAir = GetCharacterMovement()->IsFalling();
+
+	if (IsInFirstPersonPerspective())
+	{
+	}
+	else
+	{
+		if (Speed == 0.f && !bIsInAir)
+		{
+			FRotator CurrentAimRotation = FRotator(0.f, GetBaseAimRotation().Yaw, 0.f);
+			FRotator DeltaAimRotation = UKismetMathLibrary::NormalizedDeltaRotator(
+				CurrentAimRotation, StartingAimRotation);
+
+			AO_Yaw = DeltaAimRotation.Yaw;
+			//bUseControllerRotationYaw = false;
+		}
+		if (Speed > 0.f || bIsInAir)
+		{
+			StartingAimRotation = FRotator(0.f, GetBaseAimRotation().Yaw, 0.f);
+			AO_Yaw = 0.f;
+			//bUseControllerRotationYaw = true;
+		}
+	}
+
+	AO_Pitch = GetBaseAimRotation().Pitch;
+	if (AO_Pitch > 90.f && !IsLocallyControlled())
+	{
+		// Map Pitch from [270, 360) to [-90, 0)
+		FVector2D InRange(270.f, 360.f);
+		FVector2D OutRange(-90.f, 0.f);
+		AO_Pitch = FMath::GetMappedRangeValueClamped(InRange, OutRange, AO_Pitch);
+	}
+}
+
+AFPSWeapon* AFPSCharacter::GetEquippedWeapon()
+{
+	if (CombatComponent == nullptr) return nullptr;
+	return CombatComponent->EquippedWeapon;
 }
 
 /* Online Sessions

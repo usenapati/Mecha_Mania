@@ -100,97 +100,6 @@ public:
 	void LookUpAtRate(float Rate);
 #pragma endregion
 
-#pragma region /** Networked Weapons System */
-
-protected:
-	// Weapon classes spawned by default
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "MechaMania|Configurations")
-	TArray<TSubclassOf<class AFPSWeapon>> DefaultWeapons;
-
-	UPROPERTY(VisibleAnywhere)
-	class UCombatComponent* CombatComponent;
-public:
-	UPROPERTY(VisibleInstanceOnly, BlueprintReadWrite, Replicated, Category = "MechaMania|Inventory")
-	TArray<class AFPSWeapon*> Weapons;
-
-	UPROPERTY(VisibleInstanceOnly, BlueprintReadWrite, ReplicatedUsing = OnRep_CurrentWeapon, Category = "MechaMania|Inventory")
-	class AFPSWeapon* CurrentWeapon;
-
-	// Called whenever Current Weapon is changed
-	UPROPERTY(BlueprintAssignable, Category = "MechaMania|Delegates")
-	FCurrentWeaponChangedDelegate CurrentWeaponChangedDelegate;
-
-	UPROPERTY(VisibleInstanceOnly, BlueprintReadWrite, Category = "MechaMania|Inventory")
-	int32 CurrentIndex = 0;
-
-	UFUNCTION(BlueprintCallable, Category = "MechaMania|FPSCharacter")
-	virtual void EquipWeapon(const int32 Index);
-
-	void PlayFireWeaponMontage();
-
-protected:
-	UFUNCTION()
-	virtual void OnRep_CurrentWeapon(const class AFPSWeapon* OldWeapon);
-
-	UFUNCTION(Server, Reliable)
-	void Server_SetCurrentWeapon(class AFPSWeapon* Weapon);
-	virtual void Server_SetCurrentWeapon_Implementation(class AFPSWeapon* NewWeapon);
-
-	UFUNCTION(Server, Reliable)
-	void Server_EquipWeapon();
-	virtual void Server_EquipWeapon_Implementation();
-
-	float AO_Yaw;
-	float InterpAO_Yaw;
-	float AO_Pitch;
-	FRotator StartingAimRotation;
-
-	// Turning in place
-
-	UPROPERTY(EditAnywhere, Category = "MechaMania|Anim")
-	class UAnimMontage* FireRifleWeaponMontage;
-
-public:
-	void SetOverlappingWeapon(AFPSWeapon* Weapon);
-	bool IsWeaponEquipped();
-	bool IsAiming();
-	FORCEINLINE float GetAO_Yaw() const { return AO_Yaw; }
-	FORCEINLINE float GetAO_Pitch() const { return AO_Pitch; }
-	
-
-private:
-	UPROPERTY(ReplicatedUsing = OnRep_OverlappingWeapon)
-	class AFPSWeapon* OverlappingWeapon;
-
-	UFUNCTION()
-	void OnRep_OverlappingWeapon(AFPSWeapon* LastWeapon);
-#pragma endregion
-
-#pragma region /** Online Subsystem */
-	/*
-public:
-	// Pointer to Online Session Interface
-	IOnlineSessionPtr OnlineSessionInterface;
-
-protected:
-	UFUNCTION(BlueprintCallable)
-	void CreateGameSession();
-
-	UFUNCTION(BlueprintCallable)
-	void JoinGameSession();
-
-	void OnCreateSessionComplete(FName SessionName, bool bWasSuccessful);
-	void OnFindSessionsComplete(bool bWasSuccessful);
-	void OnJoinSessionComplete(FName SessionName, EOnJoinSessionCompleteResult::Type Result);
-
-private:
-	FOnCreateSessionCompleteDelegate CreateSessionCompleteDelegate;
-	FOnFindSessionsCompleteDelegate FindSessionsCompleteDelegate;
-	TSharedPtr<FOnlineSessionSearch> SessionSearch;
-	FOnJoinSessionCompleteDelegate JoinSessionCompleteDelegate;
-	*/
-#pragma endregion
-
 #pragma region /** Input */
 
 public:
@@ -230,4 +139,102 @@ protected:
 	void LastWeapon(const FInputActionValue& Value);
 
 #pragma endregion
+
+#pragma region /** Animation */
+protected:
+	float AO_Yaw;
+	float InterpAO_Yaw;
+	float AO_Pitch;
+	FRotator StartingAimRotation;
+
+	// Turning in place
+	void AimOffset(float DeltaTime);
+
+public:
+	FORCEINLINE float GetAO_Yaw() const { return AO_Yaw; }
+	FORCEINLINE float GetAO_Pitch() const { return AO_Pitch; }
+	AFPSWeapon* GetEquippedWeapon();	
+#pragma endregion
+
+#pragma region /** Networked Weapons System */
+
+protected:
+	// Weapon classes spawned by default
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "MechaMania|Configurations")
+	TArray<TSubclassOf<class AFPSWeapon>> DefaultWeapons;
+
+	UPROPERTY(VisibleAnywhere)
+	class UCombatComponent* CombatComponent;
+public:
+	UPROPERTY(VisibleInstanceOnly, BlueprintReadWrite, Replicated, Category = "MechaMania|Inventory")
+	TArray<class AFPSWeapon*> Weapons;
+
+	UPROPERTY(VisibleInstanceOnly, BlueprintReadWrite, ReplicatedUsing = OnRep_CurrentWeapon, Category = "MechaMania|Inventory")
+	class AFPSWeapon* CurrentWeapon;
+
+	// Called whenever Current Weapon is changed
+	UPROPERTY(BlueprintAssignable, Category = "MechaMania|Delegates")
+	FCurrentWeaponChangedDelegate CurrentWeaponChangedDelegate;
+
+	UPROPERTY(VisibleInstanceOnly, BlueprintReadWrite, Category = "MechaMania|Inventory")
+	int32 CurrentIndex = 0;
+
+	UFUNCTION(BlueprintCallable, Category = "MechaMania|FPSCharacter")
+	virtual void EquipWeapon(const int32 Index);
+
+	void PlayFireWeaponMontage();
+
+protected:
+	UFUNCTION()
+	virtual void OnRep_CurrentWeapon(const class AFPSWeapon* OldWeapon);
+
+	UFUNCTION(Server, Reliable)
+	void Server_SetCurrentWeapon(class AFPSWeapon* Weapon);
+	virtual void Server_SetCurrentWeapon_Implementation(class AFPSWeapon* NewWeapon);
+
+	UFUNCTION(Server, Reliable)
+	void Server_EquipWeapon();
+	virtual void Server_EquipWeapon_Implementation();
+	
+	UPROPERTY(EditAnywhere, Category = "MechaMania|Anim")
+	class UAnimMontage* FireRifleWeaponMontage;
+
+public:
+	void SetOverlappingWeapon(AFPSWeapon* Weapon);
+	bool IsWeaponEquipped();
+	bool IsAiming();
+
+private:
+	UPROPERTY(ReplicatedUsing = OnRep_OverlappingWeapon)
+	class AFPSWeapon* OverlappingWeapon;
+
+	UFUNCTION()
+	void OnRep_OverlappingWeapon(AFPSWeapon* LastWeapon);
+#pragma endregion
+
+#pragma region /** Online Subsystem */
+	/*
+public:
+	// Pointer to Online Session Interface
+	IOnlineSessionPtr OnlineSessionInterface;
+
+protected:
+	UFUNCTION(BlueprintCallable)
+	void CreateGameSession();
+
+	UFUNCTION(BlueprintCallable)
+	void JoinGameSession();
+
+	void OnCreateSessionComplete(FName SessionName, bool bWasSuccessful);
+	void OnFindSessionsComplete(bool bWasSuccessful);
+	void OnJoinSessionComplete(FName SessionName, EOnJoinSessionCompleteResult::Type Result);
+
+private:
+	FOnCreateSessionCompleteDelegate CreateSessionCompleteDelegate;
+	FOnFindSessionsCompleteDelegate FindSessionsCompleteDelegate;
+	TSharedPtr<FOnlineSessionSearch> SessionSearch;
+	FOnJoinSessionCompleteDelegate JoinSessionCompleteDelegate;
+	*/
+#pragma endregion
+
 };

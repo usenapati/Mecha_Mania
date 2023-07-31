@@ -7,6 +7,7 @@
 #include "Camera/CameraComponent.h"
 #include "EnhancedInput/Public/InputActionValue.h"
 #include "Interfaces/OnlineSessionInterface.h"
+#include "MechaMania/Anim/TurningInPlace.h"
 #include "FPSCharacter.generated.h"
 
 
@@ -147,13 +148,17 @@ protected:
 	float AO_Pitch;
 	FRotator StartingAimRotation;
 
+	ETurningInPlace TurningInPlace;
+	void TurnInPlace(float DeltaTime);
+
 	// Turning in place
 	void AimOffset(float DeltaTime);
 
 public:
 	FORCEINLINE float GetAO_Yaw() const { return AO_Yaw; }
 	FORCEINLINE float GetAO_Pitch() const { return AO_Pitch; }
-	AFPSWeapon* GetEquippedWeapon();	
+	AFPSWeapon* GetEquippedWeapon();
+	FORCEINLINE ETurningInPlace GetTurningInPlace() const { return TurningInPlace; }
 #pragma endregion
 
 #pragma region /** Networked Weapons System */

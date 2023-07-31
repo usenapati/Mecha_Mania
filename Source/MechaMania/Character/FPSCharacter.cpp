@@ -89,6 +89,8 @@ AFPSCharacter::AFPSCharacter()
 
 	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_Camera, ECR_Ignore);
 	GetMesh()->SetCollisionResponseToChannel(ECC_Camera, ECR_Ignore);
+
+	TurningInPlace = ETurningInPlace::ETIP_NotTurning;
 }
 
 bool AFPSCharacter::IsInFirstPersonPerspective() const
@@ -544,7 +546,7 @@ void AFPSCharacter::AimOffset(float DeltaTime)
 	}
 	else
 	{
-		if (Speed == 0.f && !bIsInAir)
+		if (Speed == 0.f && !bIsInAir) // standing still, not jumping
 		{
 			FRotator CurrentAimRotation = FRotator(0.f, GetBaseAimRotation().Yaw, 0.f);
 			FRotator DeltaAimRotation = UKismetMathLibrary::NormalizedDeltaRotator(
@@ -552,12 +554,14 @@ void AFPSCharacter::AimOffset(float DeltaTime)
 
 			AO_Yaw = DeltaAimRotation.Yaw;
 			//bUseControllerRotationYaw = false;
+			TurnInPlace(DeltaTime);
 		}
-		if (Speed > 0.f || bIsInAir)
+		if (Speed > 0.f || bIsInAir) // running or jumping
 		{
 			StartingAimRotation = FRotator(0.f, GetBaseAimRotation().Yaw, 0.f);
 			AO_Yaw = 0.f;
 			//bUseControllerRotationYaw = true;
+			TurningInPlace = ETurningInPlace::ETIP_NotTurning;
 		}
 	}
 
@@ -570,6 +574,19 @@ void AFPSCharacter::AimOffset(float DeltaTime)
 		AO_Pitch = FMath::GetMappedRangeValueClamped(InRange, OutRange, AO_Pitch);
 	}
 }
+
+void AFPSCharacter::TurnInPlace(float DeltaTime)
+{
+	if (AO_Yaw > 90.f)
+	{
+		TurningInPlace = ETurningInPlace::ETIP_Right;
+	}
+	else if (AO_Yaw < -90.f)
+	{
+		TurningInPlace = ETurningInPlace::ETIP_Left;
+	}
+}
+
 
 AFPSWeapon* AFPSCharacter::GetEquippedWeapon()
 {

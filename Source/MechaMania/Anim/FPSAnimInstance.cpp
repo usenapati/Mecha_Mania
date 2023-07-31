@@ -61,6 +61,7 @@ void UFPSAnimInstance::SetVars(const float DeltaTime)
 	EquippedWeapon = Character->GetEquippedWeapon();
 	bIsCrouched = Character->bIsCrouched;
 	bIsAiming = Character->IsAiming();
+	TurningInPlace = Character->GetTurningInPlace();
 
 	// Offset Yaw for Strafing
 	FRotator AimRotation = Character->GetBaseAimRotation();

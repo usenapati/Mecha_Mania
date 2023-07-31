@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "MechaMania/Weapon/FPSWeapon.h"
 #include "Animation/AnimInstance.h"
+#include "MechaMania/Anim/TurningInPlace.h"
 #include "FPSAnimInstance.generated.h"
 
 /**
@@ -90,4 +91,7 @@ private:
 
 	UPROPERTY(BlueprintReadOnly, Category = "MechaMania|Character", meta = (AllowPrivateAccess = "true"))
 	FTransform LeftHandTransform;
+
+	UPROPERTY(BlueprintReadOnly, Category = "MechaMania|Character", meta = (AllowPrivateAccess = "true"))
+	ETurningInPlace TurningInPlace;
 };

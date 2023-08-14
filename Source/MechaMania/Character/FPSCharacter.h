@@ -131,6 +131,7 @@ protected:
 	void CrouchInput(const FInputActionValue& Value);
 	void ChangeCamera(const FInputActionValue& Value); // Switch between third person and first person camera
 	void Interact(const FInputActionValue& Value);
+	virtual void Jump() override;
 	
 	// Weapon Inputs
 	void ADS(const FInputActionValue& Value);

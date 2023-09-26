@@ -209,6 +209,7 @@ public:
 	void SetOverlappingWeapon(AFPSWeapon* Weapon);
 	bool IsWeaponEquipped();
 	bool IsAiming();
+	FVector GetHitTarget() const;
 
 private:
 	UPROPERTY(ReplicatedUsing = OnRep_OverlappingWeapon)

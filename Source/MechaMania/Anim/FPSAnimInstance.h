@@ -94,4 +94,10 @@ private:
 
 	UPROPERTY(BlueprintReadOnly, Category = "MechaMania|Character", meta = (AllowPrivateAccess = "true"))
 	ETurningInPlace TurningInPlace;
+
+	UPROPERTY(BlueprintReadOnly, Category = "MechaMania|Character", meta = (AllowPrivateAccess = "true"))
+	FRotator RightHandRotation;
+
+	UPROPERTY(BlueprintReadOnly, Category = "MechaMania|Character", meta = (AllowPrivateAccess = "true"))
+	bool bLocallyControlled;
 };

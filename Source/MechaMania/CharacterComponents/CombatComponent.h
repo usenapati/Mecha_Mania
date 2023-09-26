@@ -76,6 +76,8 @@ private:
 	float CrosshariVelocityFactor;
 	float CrosshariInAirFactor;
 
+	FVector HitTarget;
+
 public:	
 	
 

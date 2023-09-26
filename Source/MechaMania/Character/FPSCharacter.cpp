@@ -509,6 +509,13 @@ bool AFPSCharacter::IsAiming()
 	return (CombatComponent && CombatComponent->bAiming);
 }
 
+FVector AFPSCharacter::GetHitTarget() const
+{
+	if (CombatComponent == nullptr) return FVector();
+	return CombatComponent->HitTarget;
+	
+}
+
 void AFPSCharacter::Server_SetCurrentWeapon_Implementation(AFPSWeapon* NewWeapon)
 {
 	const AFPSWeapon* OldWeapon = CurrentWeapon;
